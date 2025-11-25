@@ -1,0 +1,394 @@
+{% extends "base/menu_base.html" %}
+{% load static %}
+
+{% block title %}Detalle del animal · Control Ganadero{% endblock %}
+
+{% block extra_head %}
+<style>
+  .detail-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:1rem;
+  }
+  .detail-header-left{
+    display:flex;
+    align-items:center;
+    gap:.75rem;
+  }
+  .back-link{
+    display:inline-flex;
+    align-items:center;
+    gap:.35rem;
+    font-size:.8rem;
+    color:#4b5563;
+    text-decoration:none;
+  }
+  .back-link i{
+    font-size:.9rem;
+  }
+  .detail-title{
+    font-size:1rem;
+    font-weight:600;
+  }
+  .detail-subtitle{
+    font-size:.78rem;
+    color:#6b7280;
+  }
+  .pill-estado{
+    display:inline-flex;
+    align-items:center;
+    border-radius:999px;
+    padding:.15rem .8rem;
+    font-size:.75rem;
+    font-weight:500;
+  }
+  .pill-estado-activo{
+    background:#020617;
+    color:#f9fafb;
+  }
+  .pill-estado-inactivo{
+    background:#e5e7eb;
+    color:#4b5563;
+  }
+  .pill-estado-borrador{
+    background:#eef2ff;
+    color:#4338ca;
+  }
+
+  .detail-layout{
+    display:grid;
+    grid-template-columns: minmax(0,2.3fr) minmax(0,1.3fr);
+    gap:1rem;
+  }
+
+  .card-soft{
+    background:#ffffff;
+    border-radius:16px;
+    border:1px solid #e5e7eb;
+    padding:1rem 1.1rem;
+    margin-bottom:.75rem;
+  }
+
+  .photo-card{
+    padding:0;
+    background:#ffffff;
+    border-radius:16px;
+}
+
+.photo-banner{
+    width:100%;
+    height:auto;
+    max-height:340px;      /* ajusta si quieres más o menos alto */
+    object-fit:contain;    /* se ve completa sin recorte */
+    border-radius:16px;
+    display:block;
+    background:#ffffff;    /* mismo color que la tarjeta, sin bordes raros */
+}
+  .photo-placeholder{
+    width:100%;
+    min-height:190px;
+    border-radius:16px;
+    background:linear-gradient(120deg,#e5e7eb,#f4f4f5);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:#9ca3af;
+    font-size:.9rem;
+  }
+
+
+  .section-title{
+    font-size:.82rem;
+    font-weight:600;
+    margin-bottom:.4rem;
+  }
+  .section-body{
+    font-size:.8rem;
+  }
+  .info-grid{
+    display:grid;
+    grid-template-columns: minmax(0,1fr) minmax(0,1fr);
+    gap:.35rem .75rem;
+  }
+  .info-label{
+    font-size:.76rem;
+    color:#6b7280;
+  }
+  .info-value{
+    font-size:.8rem;
+    font-weight:500;
+  }
+
+  .alerts-list{
+    font-size:.78rem;
+  }
+  .alert-item{
+    padding:.35rem .6rem;
+    border-radius:.5rem;
+    background:#fef3c7;
+    color:#92400e;
+    display:flex;
+    align-items:center;
+    gap:.4rem;
+    margin-bottom:.25rem;
+  }
+  .alert-item i{
+    font-size:.9rem;
+  }
+
+  .side-card-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:.4rem;
+  }
+  .tabs-strip{
+    display:flex;
+    background:#f3f4f6;
+    border-radius:999px;
+    padding:.15rem;
+    font-size:.75rem;
+  }
+  .tabs-pill{
+    flex:1;
+    text-align:center;
+    padding:.25rem .4rem;
+    border-radius:999px;
+    cursor:default;
+  }
+  .tabs-pill.active{
+    background:#ffffff;
+    font-weight:500;
+  }
+  .side-list{
+    margin-top:.5rem;
+  }
+  .side-list-item{
+    padding:.55rem .6rem;
+    border-radius:.65rem;
+    border:1px solid #e5e7eb;
+    margin-bottom:.45rem;
+    font-size:.78rem;
+  }
+  .side-list-title{
+    font-weight:600;
+    margin-bottom:.15rem;
+  }
+  .side-list-meta{
+    display:flex;
+    justify-content:space-between;
+    font-size:.73rem;
+    color:#6b7280;
+  }
+
+  @media (max-width: 992px){
+    .detail-layout{
+      grid-template-columns:minmax(0,1fr);
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="detail-header">
+  <div class="detail-header-left">
+    <a href="{% url 'animals:list' %}" class="back-link">
+      <i class="bi bi-arrow-left"></i>
+      Volver
+    </a>
+    <div>
+      <div class="detail-title">
+        {{ animal.arete|default:animal.rfid|default:"Sin identificador" }}
+      </div>
+      <div class="detail-subtitle">
+        RFID: {{ animal.rfid|default:"—" }}
+      </div>
+    </div>
+  </div>
+
+  <div>
+    {% if animal.estado == animal.Estado.ACTIVO %}
+      <span class="pill-estado pill-estado-activo">activo</span>
+    {% elif animal.estado == animal.Estado.INACTIVO %}
+      <span class="pill-estado pill-estado-inactivo">inactivo</span>
+    {% else %}
+      <span class="pill-estado pill-estado-borrador">borrador</span>
+    {% endif %}
+  </div>
+</div>
+
+<div class="detail-layout">
+  <!-- COLUMNA IZQUIERDA -->
+  <div>
+    <!-- Foto -->
+    <div class="card-soft photo-card">
+      {% if animal.foto %}
+        <img src="{{ animal.foto.url }}" alt="Foto del animal" class="photo-banner">
+      {% else %}
+        <div class="photo-placeholder">
+          <i class="bi bi-image me-1"></i> Sin foto de identificación
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Información general -->
+    <div class="card-soft">
+      <div class="section-title">Información general</div>
+      <div class="section-body info-grid">
+        <div>
+          <div class="info-label">RFID</div>
+          <div class="info-value">{{ animal.rfid|default:"—" }}</div>
+        </div>
+        <div>
+          <div class="info-label">Raza</div>
+          <div class="info-value">{{ animal.raza|default:"—" }}</div>
+        </div>
+        <div>
+          <div class="info-label">Sexo</div>
+          <div class="info-value">{{ animal.get_sexo_display|default:"—" }}</div>
+        </div>
+        <div>
+          <div class="info-label">Fecha de nacimiento</div>
+          <div class="info-value">
+            {% if animal.fecha_nacimiento %}
+              {{ animal.fecha_nacimiento|date:"Y-m-d" }}
+            {% else %}
+              —
+            {% endif %}
+          </div>
+        </div>
+        <div>
+          <div class="info-label">Lote / Potrero</div>
+          <div class="info-value">{{ animal.potrero|default:"—" }}</div>
+        </div>
+        <div>
+          <div class="info-label">Creado</div>
+          <div class="info-value">{{ animal.created_at|date:"Y-m-d H:i" }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Peso y ganancia (aprox con pesajes) -->
+        <!-- Peso y ganancia -->
+    <div class="card-soft">
+      <div class="section-title">Peso y ganancia</div>
+      <div class="section-body info-grid">
+        <div>
+          <div class="info-label">Peso de entrada (kg)</div>
+          <div class="info-value">
+            {% if pesaje_inicial %}
+              {{ pesaje_inicial.peso_kg }} kg
+            {% else %}
+              —
+            {% endif %}
+          </div>
+        </div>
+        <div>
+          <div class="info-label">Peso actual (kg)</div>
+          <div class="info-value">
+            {% if pesaje_actual %}
+              {{ pesaje_actual.peso_kg }} kg
+            {% else %}
+              —
+            {% endif %}
+          </div>
+        </div>
+        <div>
+          <div class="info-label">Último pesaje</div>
+          <div class="info-value">
+            {% if pesaje_actual %}
+              {{ pesaje_actual.fecha|date:"Y-m-d" }}
+            {% else %}
+              —
+            {% endif %}
+          </div>
+        </div>
+        <div>
+          <div class="info-label">Nº de pesajes</div>
+          <div class="info-value">
+            {{ num_pesajes }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- Alertas (placeholder simple por ahora) -->
+    <div class="card-soft">
+      <div class="section-title">Alertas activas</div>
+      <div class="alerts-list">
+        {% if eventos %}
+          {# aquí podrías más adelante marcar eventos como "próxima vacuna" y demás #}
+          <div class="alert-item">
+            <i class="bi bi-exclamation-triangle"></i>
+            El animal tiene {{ eventos|length }} evento(s) sanitario(s) registrado(s).
+          </div>
+        {% else %}
+          <span class="text-muted small">No hay alertas activas registradas.</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- COLUMNA DERECHA -->
+  <div>
+    <div class="card-soft">
+      <div class="side-card-header">
+        <div class="tabs-strip">
+          <div class="tabs-pill active">Historial de pesajes</div>
+          <div class="tabs-pill">Eventos sanitarios</div>
+        </div>
+      </div>
+
+      <!-- Lista de pesajes -->
+      <div class="side-list">
+        {% if pesajes %}
+          {% for p in pesajes %}
+            <div class="side-list-item">
+              <div class="side-list-title">
+                {{ p.peso_kg }} kg
+              </div>
+              <div class="side-list-meta">
+                <span>{{ p.fecha|date:"Y-m-d" }}</span>
+                <span>#{{ forloop.counter }}</span>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="text-muted small">No hay pesajes registrados.</div>
+        {% endif %}
+      </div>
+
+      <hr class="my-3">
+
+      <!-- Lista de eventos sanitarios (solo lectura por ahora) -->
+      <div class="section-title mb-2">Eventos sanitarios</div>
+      <div class="side-list">
+        {% if eventos %}
+          {% for e in eventos %}
+            <div class="side-list-item">
+              <div class="side-list-title">
+                {{ e.tipo }}
+              </div>
+              <div class="side-list-meta">
+                <span>{{ e.fecha|date:"Y-m-d" }}</span>
+                <span>{{ e.responsable }}</span>
+              </div>
+              {% if e.notas %}
+                <div class="mt-1 small text-muted">
+                  {{ e.notas }}
+                </div>
+              {% endif %}
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="text-muted small">No hay eventos sanitarios registrados.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,321 @@
+{% extends "base/menu_base.html" %}
+{% load static %}
+
+{% block title %}Animales · Control Ganadero{% endblock %}
+
+{% block extra_head %}
+<style>
+  .page-header-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:.75rem;
+  }
+  .page-title{
+    font-size:1.05rem;
+    font-weight:600;
+  }
+  .page-subtitle{
+    font-size:.8rem;
+    color:#6b7280;
+  }
+  .btn-new-animal{
+    border-radius:999px;
+    padding:.4rem 1.25rem;
+    font-size:.86rem;
+    background:#020617;
+    border-color:#020617;
+    color:#f9fafb;
+    display:inline-flex;
+    align-items:center;
+    gap:.4rem;
+  }
+  .btn-new-animal:hover{
+    background:#020617;
+    opacity:.9;
+    color:#f9fafb;
+  }
+
+  .filters-card{
+    background:#ffffff;
+    border-radius:14px;
+    padding:.9rem 1.1rem;
+    border:1px solid #e5e7eb;
+    margin-bottom:1rem;
+  }
+  .filters-row{
+    display:grid;
+    grid-template-columns: minmax(0,3fr) minmax(0,1.2fr) minmax(0,1.2fr);
+    gap:.75rem;
+  }
+  .search-box{
+    position:relative;
+  }
+  .search-box input{
+    padding-left:2.2rem;
+  }
+  .search-box .bi-search{
+    position:absolute;
+    left:.65rem;
+    top:50%;
+    transform:translateY(-50%);
+    color:#9ca3af;
+    font-size:.9rem;
+  }
+
+  .table-card{
+    background:#ffffff;
+    border-radius:14px;
+    border:1px solid #e5e7eb;
+    padding:1rem 1.1rem 1rem;
+  }
+  .table-card-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:.5rem;
+  }
+  .table-card-header span{
+    font-size:.82rem;
+    color:#6b7280;
+  }
+  .table thead th{
+    font-size:.75rem;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:#9ca3af;
+    border-bottom:1px solid #e5e7eb;
+    padding-top:.6rem;
+    padding-bottom:.45rem;
+  }
+  .table tbody td{
+    font-size:.84rem;
+    vertical-align:middle;
+    padding-top:.55rem;
+    padding-bottom:.55rem;
+    border-bottom:1px solid #f1f5f9;
+  }
+  .pill-estado{
+    display:inline-flex;
+    align-items:center;
+    border-radius:999px;
+    padding:.12rem .6rem;
+    font-size:.72rem;
+    font-weight:500;
+  }
+  .pill-estado-activo{
+    background:#020617;
+    color:#f9fafb;
+  }
+  .pill-estado-inactivo{
+    background:#e5e7eb;
+    color:#4b5563;
+  }
+  .pill-estado-borrador{
+    background:#eef2ff;
+    color:#4338ca;
+  }
+  .alert-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:.25rem;
+    font-size:.8rem;
+    color:#ef4444;
+  }
+  .icon-link{
+    color:#6b7280;
+  }
+  .icon-link:hover{
+    color:#111827;
+  }
+
+  .pagination-sm .page-link{
+    font-size:.8rem;
+  }
+
+  @media (max-width: 992px){
+    .filters-row{
+      grid-template-columns: minmax(0,1fr);
+    }
+    .page-header-row{
+      flex-direction:column;
+      align-items:flex-start;
+      gap:.5rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header-row">
+  <div>
+    <div class="page-title">Animales</div>
+    <div class="page-subtitle">Gestión del inventario de animales</div>
+  </div>
+  <div>
+    <a href="{% url 'animals:create' %}" class="btn btn-new-animal">
+      <i class="bi bi-plus-lg"></i>
+      Nuevo animal
+    </a>
+  </div>
+</div>
+
+<!-- Filtros / búsqueda -->
+<div class="filters-card">
+  <form method="get">
+    <div class="filters-row">
+      <!-- Búsqueda -->
+      <div class="search-box">
+        <i class="bi bi-search"></i>
+        <input
+          type="text"
+          class="form-control form-control-sm"
+          name="q"
+          value="{{ q }}"
+          placeholder="Buscar por RFID, nombre o raza..."
+        >
+      </div>
+
+      <!-- Estado -->
+      <div>
+        <select class="form-select form-select-sm" name="estado">
+          <option value="">Todos los estados</option>
+          {% for value, label in estados_choices %}
+            <option value="{{ value }}" {% if estado == value %}selected{% endif %}>
+              {{ label }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Lote / potrero -->
+      <div>
+        <select class="form-select form-select-sm" name="lote">
+          <option value="">Todos los lotes</option>
+          {% for p in lotes %}
+            <option value="{{ p.id }}" {% if lote|add:""|stringformat:"s" == p.id|stringformat:"s" %}selected{% endif %}>
+              {{ p.nombre }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- Tabla de animales -->
+<div class="table-card">
+  <div class="table-card-header">
+    <h6 class="mb-0">Animales</h6>
+    <span>{{ total }} animales</span>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>RFID</th>
+          <th>Nombre/Alias</th>
+          <th>Raza</th>
+          <th>Sexo</th>
+          <th>Días en finca</th>
+          <th>Lote</th>
+          <th>Peso</th>
+          <th>Estado</th>
+          <th>Alertas</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if page_obj.object_list %}
+          {% for animal in page_obj.object_list %}
+            <tr>
+              <td>{{ animal.rfid|default:"—" }}</td>
+              <td>{{ animal.arete|default:"—" }}</td>
+              <td>{{ animal.raza|default:"—" }}</td>
+              <td>{{ animal.get_sexo_display|default:"—" }}</td>
+              <td>
+                {# aproximación: tiempo desde creación; luego se puede ajustar a fecha_entrada #}
+                {{ animal.created_at|timesince }}
+              </td>
+              <td>{{ animal.potrero|default:"—" }}</td>
+              <td>
+                {% if animal.ultimo_peso %}
+                  {{ animal.ultimo_peso }} kg
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+              <td>
+                {% if animal.estado == animal.Estado.ACTIVO %}
+                  <span class="pill-estado pill-estado-activo">activo</span>
+                {% elif animal.estado == animal.Estado.INACTIVO %}
+                  <span class="pill-estado pill-estado-inactivo">inactivo</span>
+                {% else %}
+                  <span class="pill-estado pill-estado-borrador">borrador</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if animal.num_alertas %}
+                  <span class="alert-badge">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    {{ animal.num_alertas }}
+                  </span>
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+              <td class="text-end">
+                <a href="{% url 'animals:detail' animal.pk %}" class="icon-link" title="Ver detalle">
+                  <i class="bi bi-eye"></i>
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="10" class="text-center text-muted py-4">
+              No hay animales registrados que coincidan con el filtro.
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Paginación -->
+  {% if page_obj.paginator.num_pages > 1 %}
+    <nav class="mt-3">
+      <ul class="pagination pagination-sm mb-0 justify-content-end">
+        {% if page_obj.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ q }}&estado={{ estado }}&lote={{ lote }}">«</a>
+          </li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link">«</span></li>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+          {% if num == page_obj.number %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+          {% else %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ num }}&q={{ q }}&estado={{ estado }}&lote={{ lote }}">{{ num }}</a>
+            </li>
+          {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ q }}&estado={{ estado }}&lote={{ lote }}">»</a>
+          </li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link">»</span></li>
+        {% endif %}
+      </ul>
+    </nav>
+  {% endif %}
+</div>
+
+{% endblock %}

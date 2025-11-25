@@ -1,0 +1,260 @@
+{% extends "base/menu_base.html" %}
+{% load static %}
+
+{% block title %}
+  {% if is_create %}Registrar nuevo animal{% else %}Editar animal{% endif %} · Control Ganadero
+{% endblock %}
+
+{% block extra_head %}
+<style>
+  .sheet-wrapper{
+    display:flex;
+    justify-content:center;
+    align-items:flex-start;
+  }
+  .sheet{
+    margin-top:1.5rem;
+    width:100%;
+    max-width:520px;
+    background:#ffffff;
+    border-radius:18px;
+    box-shadow:0 18px 50px rgba(15,23,42,0.08);
+    border:1px solid #e5e7eb;
+    padding:1.5rem 1.75rem 1.75rem;
+  }
+  .sheet-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    margin-bottom:1rem;
+  }
+  .sheet-title{
+    font-size:1.15rem;
+    font-weight:600;
+  }
+  .sheet-subtitle{
+    font-size:.82rem;
+    color:#6b7280;
+  }
+  .btn-icon-light{
+    border:none;
+    background:transparent;
+    color:#6b7280;
+    font-size:1.2rem;
+  }
+  .form-grid{
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0,1fr));
+    gap:.9rem .9rem;
+    margin-top:.75rem;
+  }
+  .form-grid-full{
+    grid-column:1 / -1;
+  }
+  .field-label{
+    font-size:.78rem;
+    font-weight:500;
+    margin-bottom:.12rem;
+  }
+  .field-label span.required{
+    color:#ef4444;
+  }
+  .field-help{
+    font-size:.72rem;
+    color:#9ca3af;
+    margin-top:.15rem;
+  }
+  .non-field-errors{
+    margin-bottom:.75rem;
+  }
+  .non-field-errors li{
+    font-size:.8rem;
+  }
+  .sheet-footer{
+    margin-top:1.5rem;
+    display:flex;
+    justify-content:flex-end;
+    gap:.75rem;
+  }
+  .btn-soft{
+    border-radius:999px;
+    padding:.45rem 1.15rem;
+    font-size:.85rem;
+  }
+  .btn-primary-ganadero{
+    border-radius:999px;
+    padding:.45rem 1.4rem;
+    font-size:.87rem;
+    background:#020617;
+    border-color:#020617;
+  }
+  .btn-primary-ganadero:hover{
+    background:#020617;
+    opacity:.9;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="sheet-wrapper">
+  <div class="sheet">
+
+    <!-- Encabezado -->
+    <div class="sheet-header">
+      <div>
+        <div class="sheet-title">
+          {% if is_create %}Registrar nuevo animal{% else %}Editar animal{% endif %}
+        </div>
+        <div class="sheet-subtitle">
+          Escanea el tag RFID o ingresa los datos manualmente.
+        </div>
+      </div>
+      <div>
+        <a href="{% url 'animals:list' %}" class="btn-icon-light" title="Cerrar">
+          <i class="bi bi-x-lg"></i>
+        </a>
+      </div>
+    </div>
+
+    <!-- Errores generales -->
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger non-field-errors">
+        <ul class="mb-0">
+          {% for error in form.non_field_errors %}
+            <li>{{ error }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" novalidate>
+      {% csrf_token %}
+
+      <!-- RFID -->
+      <div class="mb-3">
+        <label class="field-label">RFID</label>
+        {{ form.rfid }}
+        {% if form.rfid.errors %}
+          <div class="text-danger small">{{ form.rfid.errors|join:", " }}</div>
+        {% else %}
+          <div class="field-help">Escanea el chip o escribe el identificador RFID.</div>
+        {% endif %}
+      </div>
+
+      <div class="form-grid">
+        <!-- Alias / Arete -->
+        <div class="form-grid-full">
+          <label class="field-label">
+            Nombre/Alias o Nº de arete
+          </label>
+          {{ form.arete }}
+          {% if form.arete.errors %}
+            <div class="text-danger small">{{ form.arete.errors|join:", " }}</div>
+          {% else %}
+            <div class="field-help">Identificador visual del animal (arete, alias, etc.).</div>
+          {% endif %}
+        </div>
+
+        <!-- Sexo -->
+        <div>
+          <label class="field-label">Sexo</label>
+          {{ form.sexo }}
+          {% if form.sexo.errors %}
+            <div class="text-danger small">{{ form.sexo.errors|join:", " }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Etapa -->
+        <div>
+          <label class="field-label">Etapa productiva</label>
+          {{ form.etapa }}
+          {% if form.etapa.errors %}
+            <div class="text-danger small">{{ form.etapa.errors|join:", " }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Raza -->
+        <div>
+          <label class="field-label">Raza</label>
+          {{ form.raza }}
+          {% if form.raza.errors %}
+            <div class="text-danger small">{{ form.raza.errors|join:", " }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Fecha nacimiento -->
+        <div>
+          <label class="field-label">Fecha de nacimiento</label>
+          {{ form.fecha_nacimiento }}
+          {% if form.fecha_nacimiento.errors %}
+            <div class="text-danger small">{{ form.fecha_nacimiento.errors|join:", " }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Peso inicial -->
+        <div>
+          <label class="field-label">Peso de entrada (kg)</label>
+          {{ form.peso_inicial }}
+          {% if form.peso_inicial.errors %}
+            <div class="text-danger small">{{ form.peso_inicial.errors|join:", " }}</div>
+          {% else %}
+            <div class="field-help">Se registrará como el primer pesaje del animal.</div>
+          {% endif %}
+        </div>
+
+        <!-- Lote / Potrero -->
+        <div>
+          <label class="field-label">Lote asignado (potrero)</label>
+          {{ form.potrero }}
+          {% if form.potrero.errors %}
+            <div class="text-danger small">{{ form.potrero.errors|join:", " }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Estado -->
+        <div>
+          <label class="field-label">Estado</label>
+          {{ form.estado }}
+          {% if form.estado.errors %}
+            <div class="text-danger small">{{ form.estado.errors|join:", " }}</div>
+          {% else %}
+            <div class="field-help">Si marcas ACTIVO se validan datos mínimos.</div>
+          {% endif %}
+        </div>
+
+        <!-- Motivo baja -->
+        <div class="form-grid-full">
+          <label class="field-label">Motivo de baja (si aplica)</label>
+          {{ form.motivo_baja }}
+          {% if form.motivo_baja.errors %}
+            <div class="text-danger small">{{ form.motivo_baja.errors|join:", " }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Foto -->
+        <div class="form-grid-full">
+          <label class="field-label">Foto del animal</label>
+          {{ form.foto }}
+          {% if form.foto.errors %}
+            <div class="text-danger small">{{ form.foto.errors|join:", " }}</div>
+          {% else %}
+            <div class="field-help">Adjunta una foto para facilitar la identificación visual.</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Pie -->
+      <div class="sheet-footer">
+        <a href="{% url 'animals:list' %}" class="btn btn-light btn-soft">
+          Cancelar
+        </a>
+        <button type="submit" class="btn btn-primary-ganadero">
+          {% if is_create %}Guardar animal{% else %}Guardar cambios{% endif %}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
