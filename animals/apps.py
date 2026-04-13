@@ -4,5 +4,3 @@ class AnimalsConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "animals"
 
-    def ready(self):
-        from . import signals  # noqa

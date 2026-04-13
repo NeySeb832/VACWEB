@@ -10,23 +10,6 @@ class AnimalForm(forms.ModelForm):
     Respeta las RN definidas en el modelo (clean()).
     """
 
-    # Campo NO mapeado al modelo → se usará para crear el primer Pesaje
-    peso_inicial = forms.DecimalField(
-        label="Peso de entrada (kg)",
-        max_digits=7,
-        decimal_places=2,
-        required=False,
-        widget=forms.NumberInput(
-            attrs={
-                "class": "form-control",
-                "placeholder": "Ej: 250",
-                "step": "0.01",
-                "min": "0",
-            }
-        ),
-        help_text="Si lo ingresas, se registrará como el primer pesaje del animal.",
-    )
-
     class Meta:
         model = Animal
         fields = [

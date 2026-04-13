@@ -6,13 +6,13 @@ CRUD básico de animales: lista, detalle, creación, edición y baja lógica.
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from django.db.models import Q, Max, Count
+from django.db.models import Q, Count
 from django.shortcuts import render, redirect, get_object_or_404
-from django.utils import timezone
 
 from authz.decorators import require_perm
-from .models import Animal, Potrero, Movimiento, EventoSanitario, Pesaje
+from .models import Animal, Potrero, Movimiento
 from .forms import AnimalForm
+from eventos.models import EventoSanitario
 
 
 @login_required
@@ -52,9 +52,8 @@ def animal_list(request):
     if lote:
         qs = qs.filter(potrero_id=lote)
 
-    # Columnas derivadas para la tabla: último peso y nº de eventos/alertas
+    # Columna derivada: nº de eventos sanitarios del animal
     qs = qs.annotate(
-        ultimo_peso=Max("pesajes__peso_kg"),
         num_alertas=Count("eventos"),
     )
 
@@ -84,26 +83,12 @@ def animal_create(request):
             animal = form.save(commit=False)
             animal.last_modified_by = request.user
             animal.save()
-
-            # Si se ingresó peso inicial, registramos el primer Pesaje
-            peso_inicial = form.cleaned_data.get("peso_inicial")
-            if peso_inicial:
-                Pesaje.objects.create(
-                    animal=animal,
-                    peso_kg=peso_inicial,
-                    fecha=timezone.now().date(),
-                )
-
             messages.success(request, "Animal creado correctamente.")
             return redirect("animals:detail", pk=animal.pk)
     else:
         form = AnimalForm()
 
-    ctx = {
-        "form": form,
-        "is_create": True,
-    }
-    return render(request, "animals/animal_form.html", ctx)
+    return render(request, "animals/animal_form.html", {"form": form, "is_create": True})
 
 
 @login_required
@@ -123,23 +108,10 @@ def animal_detail(request, pk: int):
     movimientos = animal.movimientos.select_related("desde", "hacia").order_by("-fecha")[:10]
     eventos = animal.eventos.order_by("-fecha")[:10]
 
-    # IMPORTANTE: convertir a lista para poder calcular inicial/actual sin índices negativos
-    pesajes_qs = list(animal.pesajes.order_by("fecha"))  # más antiguo → más reciente
-    num_pesajes = len(pesajes_qs)
-    pesaje_inicial = pesajes_qs[0] if num_pesajes else None
-    pesaje_actual = pesajes_qs[-1] if num_pesajes else None
-
-    # Para el listado lateral mostramos los más recientes primero
-    pesajes = list(reversed(pesajes_qs))
-
     ctx = {
         "animal": animal,
         "movimientos": movimientos,
         "eventos": eventos,
-        "pesajes": pesajes,
-        "pesaje_inicial": pesaje_inicial,
-        "pesaje_actual": pesaje_actual,
-        "num_pesajes": num_pesajes,
     }
     return render(request, "animals/animal_detail.html", ctx)
 

@@ -15,8 +15,9 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
-    "authz",  # app del CU-001
-    "animals",
+    "authz",    # app del CU-001
+    "animals",  # app del CU-002
+    "eventos",  # app del CU-003
 ]
 
 MIDDLEWARE = [

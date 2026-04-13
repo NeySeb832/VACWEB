@@ -328,11 +328,11 @@
           <i class="bi bi-grid-1x2"></i>
           <span>Dashboard</span>
         </a>
-        <a class="nav-link active" href="{% url 'animals:list' %}">
+        <a class="nav-link {% if request.resolver_match.app_name == 'animals' %}active{% endif %}" href="{% url 'animals:list' %}">
           <i class="bi bi-cow"></i>
           <span>Animales</span>
         </a>
-        <a class="nav-link" href="#">
+        <a class="nav-link {% if request.resolver_match.app_name == 'eventos' %}active{% endif %}" href="{% url 'eventos:list' %}">
           <i class="bi bi-activity"></i>
           <span>Eventos</span>
         </a>

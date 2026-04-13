@@ -63,6 +63,7 @@ class Animal(models.Model):
 
     # RN-2: si estado ACTIVO → debe tener mínimos
     def clean(self):
+        # RN-2: estado ACTIVO requiere datos mínimos
         if self.estado == self.Estado.ACTIVO:
             missing = []
             if not (self.rfid or self.arete):
@@ -74,14 +75,35 @@ class Animal(models.Model):
             if not self.potrero_id:
                 missing.append("Potrero")
             if missing:
-                raise ValidationError(f"Para estado ACTIVO faltan: {', '.join(missing)}")
+                raise ValidationError(
+                    {"__all__": f"Para estado ACTIVO faltan: {', '.join(missing)}"}
+                )
 
-        # Si baja lógica → no permitir borrar identificadores, solo bloquear edición en lógica de negocio
+        # RN-1: RFID y Arete son inmutables si el animal ya tiene historial
+        if self.pk:
+            try:
+                prev = Animal.objects.get(pk=self.pk)
+            except Animal.DoesNotExist:
+                pass
+            else:
+                if prev.tiene_historial:
+                    errores = {}
+                    if prev.rfid != self.rfid:
+                        errores["rfid"] = (
+                            "RN-1: No se puede modificar el RFID de un animal con historial."
+                        )
+                    if prev.arete != self.arete:
+                        errores["arete"] = (
+                            "RN-1: No se puede modificar el Arete de un animal con historial."
+                        )
+                    if errores:
+                        raise ValidationError(errores)
+
         return super().clean()
 
     @property
     def tiene_historial(self) -> bool:
-        return self.eventos.exists() or self.movimientos.exists() or self.pesajes.exists()
+        return self.eventos.exists() or self.movimientos.exists()
 
 
 class Movimiento(models.Model):
@@ -103,28 +125,3 @@ class Movimiento(models.Model):
         return f"{self.animal} → {self.hacia} ({self.fecha:%Y-%m-%d})"
 
 
-class EventoSanitario(models.Model):
-    """Registro sanitario básico (vacunas/desparasitaciones)."""
-    animal = models.ForeignKey(Animal, on_delete=models.CASCADE, related_name="eventos")
-    tipo = models.CharField(max_length=64)         # p.ej. Vacuna Aftosa
-    fecha = models.DateField(default=timezone.now)
-    responsable = models.CharField(max_length=64)
-    notas = models.TextField(blank=True, null=True)
-
-    def clean(self):
-        if not self.fecha or not self.responsable:
-            raise ValidationError("Fecha y responsable son obligatorios.")
-        return super().clean()
-
-    def __str__(self) -> str:
-        return f"{self.tipo} · {self.fecha:%Y-%m-%d}"
-
-
-class Pesaje(models.Model):
-    """Pesajes con fecha para indicadores de productividad."""
-    animal = models.ForeignKey(Animal, on_delete=models.CASCADE, related_name="pesajes")
-    fecha = models.DateField(default=timezone.now)
-    peso_kg = models.DecimalField(max_digits=7, decimal_places=2)
-
-    def __str__(self) -> str:
-        return f"{self.peso_kg} kg · {self.fecha:%Y-%m-%d}"

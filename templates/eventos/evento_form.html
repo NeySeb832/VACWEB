@@ -1,0 +1,273 @@
+{% extends "base/menu_base.html" %}
+{% load static %}
+
+{% block title %}Registrar evento sanitario · Control Ganadero{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ── Reutiliza exactamente el patrón de animal_form.html ── */
+  .sheet-wrapper{
+    display:flex;
+    justify-content:center;
+    align-items:flex-start;
+  }
+  .sheet{
+    margin-top:1.5rem;
+    width:100%;
+    max-width:520px;
+    background:#ffffff;
+    border-radius:18px;
+    box-shadow:0 18px 50px rgba(15,23,42,0.08);
+    border:1px solid #e5e7eb;
+    padding:1.5rem 1.75rem 1.75rem;
+  }
+  .sheet-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    margin-bottom:1rem;
+  }
+  .sheet-title{
+    font-size:1.15rem;
+    font-weight:600;
+  }
+  .sheet-subtitle{
+    font-size:.82rem;
+    color:#6b7280;
+  }
+  .btn-icon-light{
+    border:none;
+    background:transparent;
+    color:#6b7280;
+    font-size:1.2rem;
+    text-decoration:none;
+    display:inline-flex;
+    align-items:center;
+  }
+  .form-grid{
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0,1fr));
+    gap:.9rem .9rem;
+    margin-top:.75rem;
+  }
+  .form-grid-full{
+    grid-column:1 / -1;
+  }
+  .field-label{
+    font-size:.78rem;
+    font-weight:500;
+    margin-bottom:.12rem;
+    display:block;
+  }
+  .field-label .required{
+    color:#ef4444;
+  }
+  .field-help{
+    font-size:.72rem;
+    color:#9ca3af;
+    margin-top:.15rem;
+  }
+  /* Animal prellenado */
+  .animal-prellenado{
+    background:#f0fdf4;
+    border:1px solid #bbf7d0;
+    border-radius:8px;
+    padding:.5rem .75rem;
+    font-size:.84rem;
+    color:#14532d;
+    display:flex;
+    align-items:center;
+    gap:.5rem;
+  }
+  .animal-prellenado i{
+    font-size:1rem;
+    color:#16a34a;
+  }
+  .non-field-errors li{
+    font-size:.8rem;
+  }
+  .sheet-footer{
+    margin-top:1.5rem;
+    display:flex;
+    justify-content:flex-end;
+    gap:.75rem;
+  }
+  .btn-soft{
+    border-radius:999px;
+    padding:.45rem 1.15rem;
+    font-size:.85rem;
+  }
+  .btn-primary-ganadero{
+    border-radius:999px;
+    padding:.45rem 1.4rem;
+    font-size:.87rem;
+    background:#020617;
+    border-color:#020617;
+  }
+  .btn-primary-ganadero:hover{
+    background:#020617;
+    opacity:.9;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="sheet-wrapper">
+  <div class="sheet">
+
+    <!-- Encabezado -->
+    <div class="sheet-header">
+      <div>
+        <div class="sheet-title">Registrar evento sanitario</div>
+        <div class="sheet-subtitle">
+          Completa los datos mínimos: tipo, fecha, responsable y producto.
+        </div>
+      </div>
+      <a href="{% url 'eventos:list' %}" class="btn-icon-light" title="Cerrar">
+        <i class="bi bi-x-lg"></i>
+      </a>
+    </div>
+
+    <!-- Mensajes de Django -->
+    {% if messages %}
+      {% for msg in messages %}
+        <div class="alert alert-{{ msg.tags|default:'info' }} py-2 mb-2">{{ msg }}</div>
+      {% endfor %}
+    {% endif %}
+
+    <!-- Errores generales -->
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger non-field-errors">
+        <ul class="mb-0">
+          {% for error in form.non_field_errors %}
+            <li>{{ error }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <div class="form-grid">
+
+        <!-- Animal (fila completa) -->
+        <div class="form-grid-full">
+          <label class="field-label">Animal <span class="required">*</span></label>
+          {% if animal_obj %}
+            {# Si viene prellenado: muestra texto + hidden, oculta el select #}
+            <div class="animal-prellenado">
+              <i class="bi bi-tag-fill"></i>
+              <span>{{ animal_obj.arete|default:animal_obj.rfid|default:"Sin ID" }}
+                {% if animal_obj.rfid and animal_obj.arete %}&nbsp;· RFID: {{ animal_obj.rfid }}{% endif %}
+              </span>
+            </div>
+            <input type="hidden" name="animal" value="{{ animal_obj.pk }}">
+            <div class="field-help">
+              <i class="bi bi-info-circle me-1"></i>Campo prellenado desde la ficha del animal.
+            </div>
+          {% else %}
+            {{ form.animal }}
+            {% if form.animal.errors %}
+              <div class="text-danger small">{{ form.animal.errors|join:", " }}</div>
+            {% endif %}
+          {% endif %}
+        </div>
+
+        <!-- Tipo -->
+        <div>
+          <label class="field-label">Tipo de evento <span class="required">*</span></label>
+          {{ form.tipo }}
+          {% if form.tipo.errors %}
+            <div class="text-danger small">{{ form.tipo.errors|join:", " }}</div>
+          {% else %}
+            <div class="field-help">Ej: Vacuna Aftosa, Desparasitación</div>
+          {% endif %}
+        </div>
+
+        <!-- Fecha -->
+        <div>
+          <label class="field-label">Fecha <span class="required">*</span></label>
+          {{ form.fecha }}
+          {% if form.fecha.errors %}
+            <div class="text-danger small">{{ form.fecha.errors|join:", " }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Responsable (fila completa) -->
+        <div class="form-grid-full">
+          <label class="field-label">Responsable <span class="required">*</span></label>
+          {{ form.responsable }}
+          {% if form.responsable.errors %}
+            <div class="text-danger small">{{ form.responsable.errors|join:", " }}</div>
+          {% else %}
+            <div class="field-help">Nombre del veterinario u operario a cargo</div>
+          {% endif %}
+        </div>
+
+        <!-- Producto (fila completa) -->
+        <div class="form-grid-full">
+          <label class="field-label">Producto aplicado <span class="required">*</span></label>
+          {{ form.producto }}
+          {% if form.producto.errors %}
+            <div class="text-danger small">{{ form.producto.errors|join:", " }}</div>
+          {% else %}
+            <div class="field-help">Nombre comercial o genérico del medicamento</div>
+          {% endif %}
+        </div>
+
+        <!-- Dosis -->
+        <div>
+          <label class="field-label">Dosis</label>
+          {{ form.dosis }}
+          {% if form.dosis.errors %}
+            <div class="text-danger small">{{ form.dosis.errors|join:", " }}</div>
+          {% else %}
+            <div class="field-help">Ej: 2ml</div>
+          {% endif %}
+        </div>
+
+        <!-- Vía de aplicación -->
+        <div>
+          <label class="field-label">Vía de aplicación</label>
+          {{ form.via_aplicacion }}
+          {% if form.via_aplicacion.errors %}
+            <div class="text-danger small">{{ form.via_aplicacion.errors|join:", " }}</div>
+          {% else %}
+            <div class="field-help">Ej: Subcutánea</div>
+          {% endif %}
+        </div>
+
+        <!-- Lote -->
+        <div>
+          <label class="field-label">Lote del producto</label>
+          {{ form.lote }}
+          {% if form.lote.errors %}
+            <div class="text-danger small">{{ form.lote.errors|join:", " }}</div>
+          {% else %}
+            <div class="field-help">Número de lote</div>
+          {% endif %}
+        </div>
+
+        <!-- Observaciones (fila completa) -->
+        <div class="form-grid-full">
+          <label class="field-label">Observaciones</label>
+          {{ form.notas }}
+          {% if form.notas.errors %}
+            <div class="text-danger small">{{ form.notas.errors|join:", " }}</div>
+          {% endif %}
+        </div>
+
+      </div>
+
+      <!-- Pie -->
+      <div class="sheet-footer">
+        <a href="{% url 'eventos:list' %}" class="btn btn-light btn-soft">Cancelar</a>
+        <button type="submit" class="btn btn-primary btn-primary-ganadero">Guardar evento</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

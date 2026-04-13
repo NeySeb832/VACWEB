@@ -1,6 +1,7 @@
 from django.contrib import admin
 
-from .models import Potrero, Animal, Movimiento, EventoSanitario, Pesaje
+from .models import Potrero, Animal, Movimiento
+from eventos.models import EventoSanitario
 
 
 @admin.register(Potrero)
@@ -15,11 +16,6 @@ class EventoSanitarioInline(admin.TabularInline):
     extra = 0
 
 
-class PesajeInline(admin.TabularInline):
-    model = Pesaje
-    extra = 0
-
-
 class MovimientoInline(admin.TabularInline):
     model = Movimiento
     fk_name = "animal"
@@ -28,10 +24,7 @@ class MovimientoInline(admin.TabularInline):
 
 @admin.register(Animal)
 class AnimalAdmin(admin.ModelAdmin):
-    """
-    CRUD de animales desde /admin.
-    Permite crear, editar y ver inlines de pesajes, eventos y movimientos.
-    """
+    """CRUD de animales desde /admin."""
 
     list_display = (
         "__str__",
@@ -57,10 +50,9 @@ class AnimalAdmin(admin.ModelAdmin):
         ("Auditoría", {"fields": ("created_at", "updated_at", "last_modified_by")}),
     )
 
-    inlines = [PesajeInline, EventoSanitarioInline, MovimientoInline]
+    inlines = [EventoSanitarioInline, MovimientoInline]
 
     def save_model(self, request, obj, form, change):
-        # Registrar quién hizo el último cambio
         obj.last_modified_by = request.user
         super().save_model(request, obj, form, change)
 
@@ -71,19 +63,3 @@ class MovimientoAdmin(admin.ModelAdmin):
     list_filter = ("fecha", "hacia", "desde")
     search_fields = ("animal__rfid", "animal__arete", "responsable")
     autocomplete_fields = ("animal", "desde", "hacia")
-
-
-@admin.register(EventoSanitario)
-class EventoSanitarioAdmin(admin.ModelAdmin):
-    list_display = ("animal", "tipo", "fecha", "responsable")
-    list_filter = ("tipo", "fecha")
-    search_fields = ("animal__rfid", "animal__arete", "tipo", "responsable")
-    autocomplete_fields = ("animal",)
-
-
-@admin.register(Pesaje)
-class PesajeAdmin(admin.ModelAdmin):
-    list_display = ("animal", "peso_kg", "fecha")
-    list_filter = ("fecha",)
-    search_fields = ("animal__rfid", "animal__arete")
-    autocomplete_fields = ("animal",)

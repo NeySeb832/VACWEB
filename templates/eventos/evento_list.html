@@ -1,0 +1,329 @@
+{% extends "base/menu_base.html" %}
+{% load static %}
+
+{% block title %}Eventos Sanitarios · Control Ganadero{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ── Reutiliza las clases del sistema de diseño ── */
+  .page-header-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:.75rem;
+  }
+  .page-title{
+    font-size:1.05rem;
+    font-weight:600;
+  }
+  .page-subtitle{
+    font-size:.8rem;
+    color:#6b7280;
+  }
+  .btn-new-animal{           /* reutiliza la clase existente */
+    border-radius:999px;
+    padding:.4rem 1.25rem;
+    font-size:.86rem;
+    background:#020617;
+    border-color:#020617;
+    color:#f9fafb;
+    display:inline-flex;
+    align-items:center;
+    gap:.4rem;
+  }
+  .btn-new-animal:hover{
+    background:#020617;
+    opacity:.9;
+    color:#f9fafb;
+  }
+  .filters-card{
+    background:#ffffff;
+    border-radius:14px;
+    padding:.9rem 1.1rem;
+    border:1px solid #e5e7eb;
+    margin-bottom:1rem;
+  }
+  .filters-row{
+    display:grid;
+    grid-template-columns: minmax(0,2.5fr) minmax(0,1.4fr) minmax(0,1.1fr) auto;
+    gap:.75rem;
+    align-items:end;
+  }
+  .search-box{
+    position:relative;
+  }
+  .search-box input{
+    padding-left:2.2rem;
+  }
+  .search-box .bi-search{
+    position:absolute;
+    left:.65rem;
+    top:50%;
+    transform:translateY(-50%);
+    color:#9ca3af;
+    font-size:.9rem;
+    pointer-events:none;
+  }
+  .table-card{
+    background:#ffffff;
+    border-radius:14px;
+    border:1px solid #e5e7eb;
+    padding:1rem 1.1rem 1rem;
+  }
+  .table-card-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:.5rem;
+  }
+  .table-card-header span{
+    font-size:.82rem;
+    color:#6b7280;
+  }
+  .table thead th{
+    font-size:.75rem;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:#9ca3af;
+    border-bottom:1px solid #e5e7eb;
+    padding-top:.6rem;
+    padding-bottom:.45rem;
+  }
+  .table tbody td{
+    font-size:.84rem;
+    vertical-align:middle;
+    padding-top:.55rem;
+    padding-bottom:.55rem;
+    border-bottom:1px solid #f1f5f9;
+  }
+  /* Pills de estado: reutiliza exactamente animal_list */
+  .pill-estado{
+    display:inline-flex;
+    align-items:center;
+    border-radius:999px;
+    padding:.12rem .6rem;
+    font-size:.72rem;
+    font-weight:500;
+  }
+  .pill-estado-activo{           /* CONFIRMADO: igual que activo */
+    background:#020617;
+    color:#f9fafb;
+  }
+  .pill-estado-inactivo{         /* ANULADO: igual que inactivo */
+    background:#e5e7eb;
+    color:#4b5563;
+  }
+  /* Badge "Corrección" */
+  .badge-correccion{
+    display:inline-flex;
+    align-items:center;
+    border-radius:999px;
+    padding:.1rem .5rem;
+    font-size:.68rem;
+    font-weight:500;
+    background:#dbeafe;
+    color:#1e40af;
+    margin-left:.35rem;
+    vertical-align:middle;
+  }
+  .icon-link{
+    color:#6b7280;
+  }
+  .icon-link:hover{
+    color:#111827;
+  }
+  .pagination-sm .page-link{
+    font-size:.8rem;
+  }
+
+  @media (max-width:992px){
+    .filters-row{
+      grid-template-columns:minmax(0,1fr);
+    }
+    .page-header-row{
+      flex-direction:column;
+      align-items:flex-start;
+      gap:.5rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Mensajes de Django -->
+{% if messages %}
+  {% for msg in messages %}
+    <div class="alert alert-{{ msg.tags|default:'info' }} alert-dismissible fade show py-2 mb-3" role="alert">
+      {{ msg }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  {% endfor %}
+{% endif %}
+
+<div class="page-header-row">
+  <div>
+    <div class="page-title">Eventos Sanitarios</div>
+    <div class="page-subtitle">Historial de vacunas, tratamientos y desparasitaciones</div>
+  </div>
+  <div>
+    <a href="{% url 'eventos:create' %}" class="btn btn-new-animal">
+      <i class="bi bi-plus-lg"></i>
+      Nuevo evento
+    </a>
+  </div>
+</div>
+
+<!-- Filtros -->
+<div class="filters-card">
+  <form method="get" novalidate>
+    <div class="filters-row">
+
+      <!-- Búsqueda: tipo o responsable -->
+      <div class="search-box">
+        <i class="bi bi-search"></i>
+        <input
+          type="text"
+          class="form-control form-control-sm"
+          name="q"
+          value="{{ q }}"
+          placeholder="Buscar por tipo o responsable..."
+        >
+      </div>
+
+      <!-- Animal -->
+      <div>
+        <select class="form-select form-select-sm" name="animal">
+          <option value="">Todos los animales</option>
+          {% for a in animales %}
+            <option value="{{ a.pk }}" {% if animal_filter|add:"" == a.pk|stringformat:"s" %}selected{% endif %}>
+              {{ a.arete|default:a.rfid|default:"Sin ID" }}
+              {% if a.rfid and a.arete %} ({{ a.rfid }}){% endif %}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Estado -->
+      <div>
+        <select class="form-select form-select-sm" name="estado">
+          <option value="">Todos los estados</option>
+          {% for val, label in estado_choices %}
+            <option value="{{ val }}" {% if estado == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Botones -->
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-sm btn-dark" style="border-radius:999px;padding:.35rem 1rem;">
+          Filtrar
+        </button>
+        <a href="{% url 'eventos:list' %}" class="btn btn-sm btn-outline-secondary" style="border-radius:999px;padding:.35rem .9rem;">
+          <i class="bi bi-x"></i>
+        </a>
+      </div>
+
+    </div>
+  </form>
+</div>
+
+<!-- Tabla de eventos -->
+<div class="table-card">
+  <div class="table-card-header">
+    <h6 class="mb-0">Eventos</h6>
+    <span>{{ total }} registro{% if total != 1 %}s{% endif %}</span>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Animal</th>
+          <th>Tipo</th>
+          <th>Fecha</th>
+          <th>Responsable</th>
+          <th>Producto</th>
+          <th>Estado</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if page_obj.object_list %}
+          {% for ev in page_obj.object_list %}
+            <tr>
+              <td>
+                <a href="{% url 'animals:detail' ev.animal_id %}" class="text-decoration-none" style="color:#111827;">
+                  {{ ev.animal.arete|default:ev.animal.rfid|default:"Sin ID" }}
+                </a>
+              </td>
+              <td>
+                {{ ev.tipo }}
+                {% if ev.evento_original_id %}
+                  <span class="badge-correccion"><i class="bi bi-arrow-return-right me-1"></i>Corrección</span>
+                {% endif %}
+              </td>
+              <td>{{ ev.fecha|date:"d/m/Y" }}</td>
+              <td>{{ ev.responsable }}</td>
+              <td>{{ ev.producto }}</td>
+              <td>
+                {% if ev.estado == 'CON' %}
+                  <span class="pill-estado pill-estado-activo">Confirmado</span>
+                {% else %}
+                  <span class="pill-estado pill-estado-inactivo">Anulado</span>
+                {% endif %}
+              </td>
+              <td class="text-end">
+                <a href="{% url 'eventos:detail' ev.pk %}" class="icon-link" title="Ver detalle">
+                  <i class="bi bi-eye"></i>
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="7" class="text-center text-muted py-4">
+              No hay eventos registrados que coincidan con el filtro.
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Paginación -->
+  {% if page_obj.paginator.num_pages > 1 %}
+    <nav class="mt-3">
+      <ul class="pagination pagination-sm mb-0 justify-content-end">
+        {% if page_obj.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ q }}&animal={{ animal_filter }}&estado={{ estado }}">«</a>
+          </li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link">«</span></li>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+          {% if num == page_obj.number %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+          {% else %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ num }}&q={{ q }}&animal={{ animal_filter }}&estado={{ estado }}">{{ num }}</a>
+            </li>
+          {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ q }}&animal={{ animal_filter }}&estado={{ estado }}">»</a>
+          </li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link">»</span></li>
+        {% endif %}
+      </ul>
+    </nav>
+  {% endif %}
+
+</div>
+
+{% endblock %}

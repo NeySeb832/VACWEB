@@ -363,25 +363,34 @@
 
       <hr class="my-3">
 
-      <!-- Lista de eventos sanitarios (solo lectura por ahora) -->
-      <div class="section-title mb-2">Eventos sanitarios</div>
+      <!-- Lista de eventos sanitarios -->
+      <div class="section-title mb-2 d-flex align-items-center justify-content-between">
+        <span>Eventos sanitarios</span>
+        <a href="{% url 'eventos:create' %}?animal={{ animal.pk }}"
+           style="font-size:.72rem;color:#f9fafb;background:#020617;border-radius:999px;padding:.15rem .65rem;text-decoration:none;display:inline-flex;align-items:center;gap:.25rem;">
+          <i class="bi bi-plus-lg"></i> Nuevo
+        </a>
+      </div>
       <div class="side-list">
         {% if eventos %}
           {% for e in eventos %}
-            <div class="side-list-item">
-              <div class="side-list-title">
-                {{ e.tipo }}
-              </div>
-              <div class="side-list-meta">
-                <span>{{ e.fecha|date:"Y-m-d" }}</span>
-                <span>{{ e.responsable }}</span>
-              </div>
-              {% if e.notas %}
-                <div class="mt-1 small text-muted">
-                  {{ e.notas }}
+            <a href="{% url 'eventos:detail' e.pk %}" class="text-decoration-none">
+              <div class="side-list-item" style="cursor:pointer;transition:border-color .15s;" onmouseover="this.style.borderColor='#020617'" onmouseout="this.style.borderColor='#e5e7eb'">
+                <div class="side-list-title" style="color:#111827;">
+                  {{ e.tipo }}
+                  {% if e.estado == 'ANU' %}
+                    <span style="display:inline-flex;align-items:center;border-radius:999px;padding:.06rem .45rem;font-size:.66rem;font-weight:500;background:#e5e7eb;color:#4b5563;margin-left:.3rem;">Anulado</span>
+                  {% endif %}
                 </div>
-              {% endif %}
-            </div>
+                <div class="side-list-meta">
+                  <span>{{ e.fecha|date:"Y-m-d" }}</span>
+                  <span>{{ e.responsable }}</span>
+                </div>
+                {% if e.producto %}
+                  <div class="mt-1 small" style="color:#6b7280;">{{ e.producto }}</div>
+                {% endif %}
+              </div>
+            </a>
           {% endfor %}
         {% else %}
           <div class="text-muted small">No hay eventos sanitarios registrados.</div>

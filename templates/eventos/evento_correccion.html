@@ -1,0 +1,310 @@
+{% extends "base/menu_base.html" %}
+{% load static %}
+
+{% block title %}Registrar corrección · Evento #{{ evento.pk }} · Control Ganadero{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ── Mismo patrón que animal_form.html ── */
+  .sheet-wrapper{
+    display:flex;
+    justify-content:center;
+    align-items:flex-start;
+  }
+  .sheet{
+    margin-top:1.5rem;
+    width:100%;
+    max-width:520px;
+    background:#ffffff;
+    border-radius:18px;
+    box-shadow:0 18px 50px rgba(15,23,42,0.08);
+    border:1px solid #e5e7eb;
+    padding:1.5rem 1.75rem 1.75rem;
+  }
+  .sheet-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    margin-bottom:1rem;
+  }
+  .sheet-title{
+    font-size:1.15rem;
+    font-weight:600;
+  }
+  .sheet-subtitle{
+    font-size:.82rem;
+    color:#6b7280;
+  }
+  .btn-icon-light{
+    border:none;
+    background:transparent;
+    color:#6b7280;
+    font-size:1.2rem;
+    text-decoration:none;
+    display:inline-flex;
+    align-items:center;
+  }
+  .form-grid{
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0,1fr));
+    gap:.9rem .9rem;
+    margin-top:.75rem;
+  }
+  .form-grid-full{
+    grid-column:1 / -1;
+  }
+  .field-label{
+    font-size:.78rem;
+    font-weight:500;
+    margin-bottom:.12rem;
+    display:block;
+  }
+  .field-label .required{
+    color:#ef4444;
+  }
+  .field-help{
+    font-size:.72rem;
+    color:#9ca3af;
+    margin-top:.15rem;
+  }
+  .non-field-errors li{
+    font-size:.8rem;
+  }
+  /* Card del evento original */
+  .original-summary{
+    background:#f8fafc;
+    border:1px solid #e2e8f0;
+    border-radius:12px;
+    padding:.75rem 1rem;
+    margin-bottom:1rem;
+    font-size:.82rem;
+  }
+  .original-summary-label{
+    font-size:.72rem;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    color:#64748b;
+    margin-bottom:.5rem;
+    display:flex;
+    align-items:center;
+    gap:.4rem;
+  }
+  .original-summary-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:.25rem .75rem;
+  }
+  .original-summary .info-label{
+    font-size:.72rem;
+    color:#94a3b8;
+  }
+  .original-summary .info-value{
+    font-size:.78rem;
+    font-weight:500;
+    color:#475569;
+  }
+  /* Sheet footer */
+  .sheet-footer{
+    margin-top:1.5rem;
+    display:flex;
+    justify-content:flex-end;
+    gap:.75rem;
+  }
+  .btn-soft{
+    border-radius:999px;
+    padding:.45rem 1.15rem;
+    font-size:.85rem;
+  }
+  .btn-primary-ganadero{
+    border-radius:999px;
+    padding:.45rem 1.4rem;
+    font-size:.87rem;
+    background:#020617;
+    border-color:#020617;
+  }
+  .btn-primary-ganadero:hover{
+    background:#020617;
+    opacity:.9;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="sheet-wrapper">
+  <div class="sheet">
+
+    <!-- Encabezado -->
+    <div class="sheet-header">
+      <div>
+        <div class="sheet-title">Registrar corrección</div>
+        <div class="sheet-subtitle">
+          Se creará un nuevo evento vinculado al original. El evento original no se modifica.
+        </div>
+      </div>
+      <a href="{% url 'eventos:detail' evento.pk %}" class="btn-icon-light" title="Cerrar">
+        <i class="bi bi-x-lg"></i>
+      </a>
+    </div>
+
+    <!-- Resumen del evento original -->
+    <div class="original-summary">
+      <div class="original-summary-label">
+        <i class="bi bi-file-earmark-text"></i>
+        Evento original que se corrige
+        <span style="display:inline-flex;align-items:center;border-radius:999px;padding:.08rem .55rem;font-size:.68rem;font-weight:500;background:#020617;color:#f9fafb;margin-left:.25rem;">
+          Confirmado
+        </span>
+      </div>
+      <div class="original-summary-grid">
+        <div>
+          <div class="info-label">Animal</div>
+          <div class="info-value">{{ evento.animal.arete|default:evento.animal.rfid|default:"Sin ID" }}</div>
+        </div>
+        <div>
+          <div class="info-label">Tipo</div>
+          <div class="info-value">{{ evento.tipo }}</div>
+        </div>
+        <div>
+          <div class="info-label">Fecha</div>
+          <div class="info-value">{{ evento.fecha|date:"d/m/Y" }}</div>
+        </div>
+        <div>
+          <div class="info-label">Responsable</div>
+          <div class="info-value">{{ evento.responsable }}</div>
+        </div>
+        <div class="{% if evento.dosis %}{% else %}d-none{% endif %}">
+          <div class="info-label">Producto</div>
+          <div class="info-value">{{ evento.producto }}</div>
+        </div>
+        <div>
+          <div class="info-label">&nbsp;</div>
+          <div class="info-value">
+            <a href="{% url 'eventos:detail' evento.pk %}" style="font-size:.72rem;color:#3b82f6;text-decoration:none;">
+              Ver evento original →
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mensajes de Django -->
+    {% if messages %}
+      {% for msg in messages %}
+        <div class="alert alert-{{ msg.tags|default:'info' }} py-2 mb-2">{{ msg }}</div>
+      {% endfor %}
+    {% endif %}
+
+    <!-- Errores generales -->
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger non-field-errors">
+        <ul class="mb-0">
+          {% for error in form.non_field_errors %}
+            <li>{{ error }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <div class="form-grid">
+
+        <!-- Tipo -->
+        <div>
+          <label class="field-label">Tipo de evento <span class="required">*</span></label>
+          {{ form.tipo }}
+          {% if form.tipo.errors %}
+            <div class="text-danger small">{{ form.tipo.errors|join:", " }}</div>
+          {% else %}
+            <div class="field-help">Ej: Vacuna Aftosa, Desparasitación</div>
+          {% endif %}
+        </div>
+
+        <!-- Fecha -->
+        <div>
+          <label class="field-label">Fecha <span class="required">*</span></label>
+          {{ form.fecha }}
+          {% if form.fecha.errors %}
+            <div class="text-danger small">{{ form.fecha.errors|join:", " }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Responsable (fila completa) -->
+        <div class="form-grid-full">
+          <label class="field-label">Responsable <span class="required">*</span></label>
+          {{ form.responsable }}
+          {% if form.responsable.errors %}
+            <div class="text-danger small">{{ form.responsable.errors|join:", " }}</div>
+          {% else %}
+            <div class="field-help">Nombre del veterinario u operario a cargo</div>
+          {% endif %}
+        </div>
+
+        <!-- Producto (fila completa) -->
+        <div class="form-grid-full">
+          <label class="field-label">Producto aplicado <span class="required">*</span></label>
+          {{ form.producto }}
+          {% if form.producto.errors %}
+            <div class="text-danger small">{{ form.producto.errors|join:", " }}</div>
+          {% else %}
+            <div class="field-help">Nombre comercial o genérico del medicamento</div>
+          {% endif %}
+        </div>
+
+        <!-- Dosis -->
+        <div>
+          <label class="field-label">Dosis</label>
+          {{ form.dosis }}
+          {% if form.dosis.errors %}
+            <div class="text-danger small">{{ form.dosis.errors|join:", " }}</div>
+          {% else %}
+            <div class="field-help">Ej: 2ml</div>
+          {% endif %}
+        </div>
+
+        <!-- Vía de aplicación -->
+        <div>
+          <label class="field-label">Vía de aplicación</label>
+          {{ form.via_aplicacion }}
+          {% if form.via_aplicacion.errors %}
+            <div class="text-danger small">{{ form.via_aplicacion.errors|join:", " }}</div>
+          {% else %}
+            <div class="field-help">Ej: Subcutánea</div>
+          {% endif %}
+        </div>
+
+        <!-- Lote -->
+        <div>
+          <label class="field-label">Lote del producto</label>
+          {{ form.lote }}
+          {% if form.lote.errors %}
+            <div class="text-danger small">{{ form.lote.errors|join:", " }}</div>
+          {% else %}
+            <div class="field-help">Número de lote</div>
+          {% endif %}
+        </div>
+
+        <!-- Observaciones (fila completa) -->
+        <div class="form-grid-full">
+          <label class="field-label">Observaciones</label>
+          {{ form.notas }}
+          {% if form.notas.errors %}
+            <div class="text-danger small">{{ form.notas.errors|join:", " }}</div>
+          {% endif %}
+        </div>
+
+      </div>
+
+      <!-- Pie -->
+      <div class="sheet-footer">
+        <a href="{% url 'eventos:detail' evento.pk %}" class="btn btn-light btn-soft">Cancelar</a>
+        <button type="submit" class="btn btn-primary btn-primary-ganadero">Guardar corrección</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

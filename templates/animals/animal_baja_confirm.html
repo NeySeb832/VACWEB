@@ -1,0 +1,197 @@
+{% extends "base/menu_base.html" %}
+
+{% block title %}Dar de baja · Control Ganadero{% endblock %}
+
+{% block extra_head %}
+<style>
+  .detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+  .detail-header-left {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+  }
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    font-size: .8rem;
+    color: #4b5563;
+    text-decoration: none;
+  }
+  .back-link i {
+    font-size: .9rem;
+  }
+  .detail-title {
+    font-size: 1rem;
+    font-weight: 600;
+  }
+  .detail-subtitle {
+    font-size: .78rem;
+    color: #6b7280;
+  }
+  .card-soft {
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid #e5e7eb;
+    padding: 1rem 1.1rem;
+    margin-bottom: .75rem;
+    max-width: 540px;
+  }
+  .section-title {
+    font-size: .82rem;
+    font-weight: 600;
+    margin-bottom: .4rem;
+  }
+  .info-grid {
+    display: grid;
+    grid-template-columns: minmax(0,1fr) minmax(0,1fr);
+    gap: .35rem .75rem;
+    margin-bottom: .75rem;
+  }
+  .info-label {
+    font-size: .76rem;
+    color: #6b7280;
+  }
+  .info-value {
+    font-size: .8rem;
+    font-weight: 500;
+  }
+  .warning-box {
+    background: #fef3c7;
+    border: 1px solid #fcd34d;
+    border-radius: 10px;
+    padding: .65rem .85rem;
+    color: #92400e;
+    font-size: .8rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    margin-bottom: .85rem;
+  }
+  .warning-box i {
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+  .motivo-label {
+    font-size: .8rem;
+    font-weight: 500;
+    margin-bottom: .3rem;
+    display: block;
+  }
+  .motivo-textarea {
+    width: 100%;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: .5rem .7rem;
+    font-size: .82rem;
+    resize: vertical;
+    min-height: 80px;
+    color: #111827;
+  }
+  .motivo-textarea:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 2px #e0e7ff;
+  }
+  .btn-baja {
+    background: #dc2626;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: .45rem 1.1rem;
+    font-size: .82rem;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .btn-baja:hover {
+    background: #b91c1c;
+  }
+  .btn-cancel {
+    background: #f3f4f6;
+    color: #374151;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: .45rem 1.1rem;
+    font-size: .82rem;
+    font-weight: 500;
+    text-decoration: none;
+    display: inline-block;
+  }
+  .btn-cancel:hover {
+    background: #e5e7eb;
+    color: #111827;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="detail-header">
+  <div class="detail-header-left">
+    <a href="{% url 'animals:detail' animal.pk %}" class="back-link">
+      <i class="bi bi-arrow-left"></i>
+      Volver
+    </a>
+    <div>
+      <div class="detail-title">
+        Dar de baja: {{ animal.arete|default:animal.rfid|default:"Sin identificador" }}
+      </div>
+      <div class="detail-subtitle">
+        RFID: {{ animal.rfid|default:"—" }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card-soft">
+  <div class="section-title">Información del animal</div>
+  <div class="info-grid">
+    <div>
+      <div class="info-label">Arete</div>
+      <div class="info-value">{{ animal.arete|default:"—" }}</div>
+    </div>
+    <div>
+      <div class="info-label">RFID</div>
+      <div class="info-value">{{ animal.rfid|default:"—" }}</div>
+    </div>
+    <div>
+      <div class="info-label">Raza</div>
+      <div class="info-value">{{ animal.raza|default:"—" }}</div>
+    </div>
+    <div>
+      <div class="info-label">Potrero</div>
+      <div class="info-value">{{ animal.potrero|default:"—" }}</div>
+    </div>
+  </div>
+
+  <div class="warning-box">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+    Esta acción marcará el animal como <strong>&nbsp;INACTIVO&nbsp;</strong>. El registro se conserva en el sistema (baja lógica).
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+    <label class="motivo-label" for="motivo_baja">Motivo de baja <span style="color:#6b7280;font-weight:400">(opcional)</span></label>
+    <textarea
+      id="motivo_baja"
+      name="motivo_baja"
+      class="motivo-textarea"
+      placeholder="Ej: venta, muerte, traslado permanente…"
+    >{{ animal.motivo_baja|default:"" }}</textarea>
+
+    <div class="mt-3 d-flex gap-2">
+      <button type="submit" class="btn-baja">
+        <i class="bi bi-arrow-down-circle me-1"></i>
+        Confirmar baja
+      </button>
+      <a href="{% url 'animals:detail' animal.pk %}" class="btn-cancel">Cancelar</a>
+    </div>
+  </form>
+</div>
+
+{% endblock %}

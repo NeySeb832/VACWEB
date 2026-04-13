@@ -1,0 +1,445 @@
+{% extends "base/menu_base.html" %}
+{% load static %}
+
+{% block title %}Evento #{{ evento.pk }} · {{ evento.tipo }} · Control Ganadero{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ── Reutiliza el patrón de animal_detail.html ── */
+  .detail-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:1rem;
+  }
+  .detail-header-left{
+    display:flex;
+    align-items:center;
+    gap:.75rem;
+  }
+  .back-link{
+    display:inline-flex;
+    align-items:center;
+    gap:.35rem;
+    font-size:.8rem;
+    color:#4b5563;
+    text-decoration:none;
+  }
+  .back-link i{
+    font-size:.9rem;
+  }
+  .detail-title{
+    font-size:1rem;
+    font-weight:600;
+  }
+  .detail-subtitle{
+    font-size:.78rem;
+    color:#6b7280;
+  }
+  /* Pills de estado */
+  .pill-estado{
+    display:inline-flex;
+    align-items:center;
+    border-radius:999px;
+    padding:.15rem .8rem;
+    font-size:.75rem;
+    font-weight:500;
+  }
+  .pill-estado-activo{          /* CONFIRMADO */
+    background:#020617;
+    color:#f9fafb;
+  }
+  .pill-estado-inactivo{        /* ANULADO */
+    background:#e5e7eb;
+    color:#4b5563;
+  }
+  /* Layout 2 columnas */
+  .detail-layout{
+    display:grid;
+    grid-template-columns:minmax(0,2.3fr) minmax(0,1.3fr);
+    gap:1rem;
+  }
+  .card-soft{
+    background:#ffffff;
+    border-radius:16px;
+    border:1px solid #e5e7eb;
+    padding:1rem 1.1rem;
+    margin-bottom:.75rem;
+  }
+  .section-title{
+    font-size:.82rem;
+    font-weight:600;
+    margin-bottom:.4rem;
+  }
+  .section-body{
+    font-size:.8rem;
+  }
+  .info-grid{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+    gap:.35rem .75rem;
+  }
+  .info-label{
+    font-size:.76rem;
+    color:#6b7280;
+  }
+  .info-value{
+    font-size:.8rem;
+    font-weight:500;
+  }
+  /* Card del evento original (corrección) */
+  .original-card{
+    background:#f8fafc;
+    border:1px solid #e2e8f0;
+    border-radius:12px;
+    padding:.75rem 1rem;
+    font-size:.82rem;
+  }
+  .original-card .info-label{
+    color:#94a3b8;
+  }
+  .original-card .info-value{
+    color:#475569;
+  }
+  /* Lista de correcciones */
+  .side-list{
+    margin-top:.5rem;
+  }
+  .side-list-item{
+    padding:.55rem .6rem;
+    border-radius:.65rem;
+    border:1px solid #e5e7eb;
+    margin-bottom:.45rem;
+    font-size:.78rem;
+  }
+  .side-list-title{
+    font-weight:600;
+    margin-bottom:.15rem;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  .side-list-meta{
+    display:flex;
+    justify-content:space-between;
+    font-size:.73rem;
+    color:#6b7280;
+    margin-top:.1rem;
+  }
+  /* Botones de acción del header */
+  .btn-action{
+    border-radius:999px;
+    padding:.35rem 1rem;
+    font-size:.82rem;
+    display:inline-flex;
+    align-items:center;
+    gap:.35rem;
+  }
+  /* Warning box (anulación) */
+  .warning-box{
+    background:#fef3c7;
+    border:1px solid #fcd34d;
+    border-radius:10px;
+    padding:.65rem .85rem;
+    color:#92400e;
+    font-size:.8rem;
+    display:flex;
+    align-items:center;
+    gap:.5rem;
+    margin-bottom:.75rem;
+  }
+  .warning-box i{
+    font-size:1rem;
+    flex-shrink:0;
+  }
+
+  @media (max-width:992px){
+    .detail-layout{
+      grid-template-columns:minmax(0,1fr);
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Mensajes de Django -->
+{% if messages %}
+  {% for msg in messages %}
+    <div class="alert alert-{{ msg.tags|default:'info' }} alert-dismissible fade show py-2 mb-3" role="alert">
+      {{ msg }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  {% endfor %}
+{% endif %}
+
+<!-- Encabezado -->
+<div class="detail-header">
+  <div class="detail-header-left">
+    <a href="{% url 'eventos:list' %}" class="back-link">
+      <i class="bi bi-arrow-left"></i>
+      Volver
+    </a>
+    <div>
+      <div class="detail-title">
+        {{ evento.tipo }}
+        {% if evento.es_correccion %}
+          <span style="display:inline-flex;align-items:center;border-radius:999px;padding:.1rem .55rem;font-size:.68rem;font-weight:500;background:#dbeafe;color:#1e40af;margin-left:.4rem;vertical-align:middle;">
+            <i class="bi bi-arrow-return-right me-1"></i>Corrección
+          </span>
+        {% endif %}
+      </div>
+      <div class="detail-subtitle">
+        Animal: {{ evento.animal.arete|default:evento.animal.rfid|default:"Sin ID" }}
+        &nbsp;·&nbsp; Evento #{{ evento.pk }}
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex align-items-center gap-2">
+    <!-- Pill de estado -->
+    {% if evento.estado == 'CON' %}
+      <span class="pill-estado pill-estado-activo">Confirmado</span>
+    {% else %}
+      <span class="pill-estado pill-estado-inactivo">Anulado</span>
+    {% endif %}
+
+    <!-- Acciones solo si CONFIRMADO -->
+    {% if evento.estado == 'CON' %}
+      <a href="{% url 'eventos:correccion' evento.pk %}"
+         class="btn btn-outline-dark btn-action"
+         title="Registrar corrección">
+        <i class="bi bi-pencil"></i>
+        Corregir
+      </a>
+      <button type="button"
+              class="btn btn-outline-danger btn-action"
+              data-bs-toggle="modal"
+              data-bs-target="#modalAnular"
+              title="Anular evento">
+        <i class="bi bi-x-circle"></i>
+        Anular
+      </button>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Layout principal -->
+<div class="detail-layout">
+
+  <!-- ── COLUMNA IZQUIERDA ── -->
+  <div>
+
+    <!-- Información del evento -->
+    <div class="card-soft">
+      <div class="section-title">Información del evento</div>
+      <div class="section-body info-grid">
+        <div>
+          <div class="info-label">Animal</div>
+          <div class="info-value">
+            <a href="{% url 'animals:detail' evento.animal_id %}" class="text-decoration-none" style="color:#111827;">
+              {{ evento.animal.arete|default:evento.animal.rfid|default:"Sin ID" }}
+            </a>
+          </div>
+        </div>
+        <div>
+          <div class="info-label">Tipo</div>
+          <div class="info-value">{{ evento.tipo }}</div>
+        </div>
+        <div>
+          <div class="info-label">Fecha</div>
+          <div class="info-value">{{ evento.fecha|date:"d/m/Y" }}</div>
+        </div>
+        <div>
+          <div class="info-label">Responsable</div>
+          <div class="info-value">{{ evento.responsable }}</div>
+        </div>
+        <div>
+          <div class="info-label">Producto</div>
+          <div class="info-value">{{ evento.producto }}</div>
+        </div>
+        <div>
+          <div class="info-label">Dosis</div>
+          <div class="info-value">{{ evento.dosis|default:"—" }}</div>
+        </div>
+        <div>
+          <div class="info-label">Vía de aplicación</div>
+          <div class="info-value">{{ evento.via_aplicacion|default:"—" }}</div>
+        </div>
+        <div>
+          <div class="info-label">Lote</div>
+          <div class="info-value">{{ evento.lote|default:"—" }}</div>
+        </div>
+        <div>
+          <div class="info-label">Registrado por</div>
+          <div class="info-value">{{ evento.created_by|default:"—" }}</div>
+        </div>
+        <div>
+          <div class="info-label">Fecha de registro</div>
+          <div class="info-value">{{ evento.created_at|date:"d/m/Y H:i" }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Evento original (solo si es corrección) -->
+    {% if evento.es_correccion %}
+    <div class="card-soft">
+      <div class="section-title">Evento original que se corrige</div>
+      <a href="{% url 'eventos:detail' evento.evento_original.pk %}" class="text-decoration-none d-block mb-2" style="font-size:.82rem;color:#3b82f6;">
+        <i class="bi bi-link-45deg me-1"></i>Evento #{{ evento.evento_original.pk }}
+      </a>
+      <div class="original-card">
+        <div class="info-grid">
+          <div>
+            <div class="info-label">Tipo</div>
+            <div class="info-value">{{ evento.evento_original.tipo }}</div>
+          </div>
+          <div>
+            <div class="info-label">Fecha</div>
+            <div class="info-value">{{ evento.evento_original.fecha|date:"d/m/Y" }}</div>
+          </div>
+          <div>
+            <div class="info-label">Responsable</div>
+            <div class="info-value">{{ evento.evento_original.responsable }}</div>
+          </div>
+          <div>
+            <div class="info-label">Producto</div>
+            <div class="info-value">{{ evento.evento_original.producto }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Observaciones -->
+    <div class="card-soft">
+      <div class="section-title">Observaciones</div>
+      <div class="section-body">
+        {% if evento.notas %}
+          <p style="font-size:.82rem;white-space:pre-wrap;margin-bottom:0;">{{ evento.notas }}</p>
+        {% else %}
+          <span class="text-muted small">Sin observaciones registradas.</span>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── COLUMNA DERECHA ── -->
+  <div>
+
+    <!-- Correcciones registradas -->
+    <div class="card-soft">
+      <div class="section-title d-flex align-items-center justify-content-between">
+        <span>Correcciones registradas</span>
+        {% if correcciones %}
+          <span style="font-size:.72rem;color:#6b7280;font-weight:400;">{{ correcciones|length }}</span>
+        {% endif %}
+      </div>
+      <div class="side-list">
+        {% if correcciones %}
+          {% for c in correcciones %}
+            <div class="side-list-item">
+              <div class="side-list-title">
+                <span>{{ c.tipo }}</span>
+                <a href="{% url 'eventos:detail' c.pk %}" class="icon-link" title="Ver corrección" style="color:#6b7280;">
+                  <i class="bi bi-eye"></i>
+                </a>
+              </div>
+              <div style="font-size:.78rem;color:#374151;margin-bottom:.1rem;">{{ c.producto }}</div>
+              <div class="side-list-meta">
+                <span>{{ c.fecha|date:"d/m/Y" }}</span>
+                <span>
+                  {% if c.estado == 'CON' %}
+                    <span style="display:inline-flex;align-items:center;border-radius:999px;padding:.08rem .5rem;font-size:.68rem;font-weight:500;background:#020617;color:#f9fafb;">Confirmado</span>
+                  {% else %}
+                    <span style="display:inline-flex;align-items:center;border-radius:999px;padding:.08rem .5rem;font-size:.68rem;font-weight:500;background:#e5e7eb;color:#4b5563;">Anulado</span>
+                  {% endif %}
+                </span>
+              </div>
+              <div style="font-size:.73rem;color:#9ca3af;margin-top:.2rem;">
+                {{ c.created_at|date:"d/m/Y H:i" }}
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="text-muted small">Sin correcciones registradas.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Ficha del animal -->
+    <div class="card-soft">
+      <div class="section-title">Animal</div>
+      <div class="section-body info-grid" style="margin-bottom:.6rem;">
+        <div>
+          <div class="info-label">Arete / Alias</div>
+          <div class="info-value">{{ evento.animal.arete|default:"—" }}</div>
+        </div>
+        <div>
+          <div class="info-label">RFID</div>
+          <div class="info-value">{{ evento.animal.rfid|default:"—" }}</div>
+        </div>
+        <div>
+          <div class="info-label">Potrero</div>
+          <div class="info-value">{{ evento.animal.potrero|default:"—" }}</div>
+        </div>
+        <div>
+          <div class="info-label">Estado</div>
+          <div class="info-value">{{ evento.animal.get_estado_display }}</div>
+        </div>
+      </div>
+      <a href="{% url 'animals:detail' evento.animal_id %}"
+         style="font-size:.78rem;color:#3b82f6;text-decoration:none;display:inline-flex;align-items:center;gap:.25rem;">
+        Ver ficha completa <i class="bi bi-arrow-right"></i>
+      </a>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Modal de anulación ── -->
+{% if evento.estado == 'CON' %}
+<div class="modal fade" id="modalAnular" tabindex="-1" aria-labelledby="modalAnularLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:16px;border:1px solid #e5e7eb;">
+      <form method="post" action="{% url 'eventos:anular' evento.pk %}" novalidate>
+        {% csrf_token %}
+        <div class="modal-header" style="border-bottom:1px solid #f1f5f9;padding:1rem 1.25rem .75rem;">
+          <h6 class="modal-title" id="modalAnularLabel" style="font-size:.95rem;font-weight:600;">
+            Anular evento
+          </h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body" style="padding:1rem 1.25rem;">
+          <div class="warning-box">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            Esta acción marcará el evento como <strong>&nbsp;ANULADO</strong>. No se puede deshacer.
+          </div>
+          <label class="field-label" style="font-size:.8rem;font-weight:500;margin-bottom:.3rem;display:block;">
+            Motivo de anulación <span style="color:#ef4444;">*</span>
+          </label>
+          <textarea
+            name="motivo"
+            class="form-control"
+            rows="3"
+            required
+            placeholder="Describe el motivo por el que se anula este evento..."
+            style="font-size:.82rem;resize:vertical;"
+          ></textarea>
+        </div>
+        <div class="modal-footer" style="border-top:1px solid #f1f5f9;padding:.75rem 1.25rem;">
+          <button type="button" class="btn btn-light" style="border-radius:999px;font-size:.84rem;" data-bs-dismiss="modal">
+            Cancelar
+          </button>
+          <button type="submit" class="btn btn-danger" style="border-radius:999px;font-size:.84rem;">
+            <i class="bi bi-x-circle me-1"></i>Confirmar anulación
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
