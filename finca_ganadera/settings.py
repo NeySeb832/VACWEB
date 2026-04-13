@@ -18,6 +18,7 @@ INSTALLED_APPS = [
     "authz",    # app del CU-001
     "animals",  # app del CU-002
     "eventos",  # app del CU-003
+    "pesajes",  # app del CU-004
 ]
 
 MIDDLEWARE = [

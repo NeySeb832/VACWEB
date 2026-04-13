@@ -336,8 +336,12 @@
           <i class="bi bi-activity"></i>
           <span>Eventos</span>
         </a>
-        <a class="nav-link" href="#">
+        <a class="nav-link {% if request.resolver_match.app_name == 'pesajes' %}active{% endif %}" href="{% url 'pesajes:list' %}">
           <i class="bi bi-graph-up"></i>
+          <span>Pesajes</span>
+        </a>
+        <a class="nav-link" href="#">
+          <i class="bi bi-bar-chart-line"></i>
           <span>Reportes</span>
         </a>
 

@@ -20,6 +20,7 @@ urlpatterns = [
     path("reset/done/", auth_views.PasswordResetCompleteView.as_view(template_name="auth/password_reset_complete.html"), name="password_reset_complete"),
     path("animals/", include("animals.urls")),
     path("eventos/", include("eventos.urls")),
+    path("pesajes/", include("pesajes.urls")),
 ]
 
 if settings.DEBUG:

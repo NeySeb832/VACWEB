@@ -192,17 +192,6 @@
           {% endif %}
         </div>
 
-        <!-- Peso inicial -->
-        <div>
-          <label class="field-label">Peso de entrada (kg)</label>
-          {{ form.peso_inicial }}
-          {% if form.peso_inicial.errors %}
-            <div class="text-danger small">{{ form.peso_inicial.errors|join:", " }}</div>
-          {% else %}
-            <div class="field-help">Se registrará como el primer pesaje del animal.</div>
-          {% endif %}
-        </div>
-
         <!-- Lote / Potrero -->
         <div>
           <label class="field-label">Lote asignado (potrero)</label>

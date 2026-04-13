@@ -12,7 +12,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from authz.decorators import require_perm
 from .models import Animal, Potrero, Movimiento
 from .forms import AnimalForm
-from eventos.models import EventoSanitario
+from pesajes.models import Pesaje
 
 
 @login_required
@@ -108,10 +108,20 @@ def animal_detail(request, pk: int):
     movimientos = animal.movimientos.select_related("desde", "hacia").order_by("-fecha")[:10]
     eventos = animal.eventos.order_by("-fecha")[:10]
 
+    pesajes_qs = list(Pesaje.objects.filter(animal=animal).order_by("fecha"))
+    num_pesajes = len(pesajes_qs)
+    pesaje_inicial = pesajes_qs[0] if num_pesajes else None
+    pesaje_actual = pesajes_qs[-1] if num_pesajes else None
+    pesajes = list(reversed(pesajes_qs))[:10]
+
     ctx = {
         "animal": animal,
         "movimientos": movimientos,
         "eventos": eventos,
+        "pesajes": pesajes,
+        "pesaje_inicial": pesaje_inicial,
+        "pesaje_actual": pesaje_actual,
+        "num_pesajes": num_pesajes,
     }
     return render(request, "animals/animal_detail.html", ctx)
 

@@ -342,19 +342,37 @@
         </div>
       </div>
 
+      <!-- Cabecera pesajes con botón nuevo -->
+      <div class="section-title mb-2 d-flex align-items-center justify-content-between">
+        <span>Historial de pesajes</span>
+        <a href="{% url 'pesajes:create' %}?animal={{ animal.pk }}"
+           style="font-size:.72rem;color:#f9fafb;background:#020617;border-radius:999px;padding:.15rem .65rem;text-decoration:none;display:inline-flex;align-items:center;gap:.25rem;">
+          <i class="bi bi-plus-lg"></i> Nuevo
+        </a>
+      </div>
+
       <!-- Lista de pesajes -->
       <div class="side-list">
         {% if pesajes %}
           {% for p in pesajes %}
-            <div class="side-list-item">
-              <div class="side-list-title">
-                {{ p.peso_kg }} kg
+            <a href="{% url 'pesajes:detail' p.pk %}" class="text-decoration-none">
+              <div class="side-list-item" style="cursor:pointer;transition:border-color .15s;" onmouseover="this.style.borderColor='#020617'" onmouseout="this.style.borderColor='#e5e7eb'">
+                <div class="side-list-title" style="color:#111827;">
+                  {{ p.peso_kg }} kg
+                  {% if p.variacion_kg is not None %}
+                    {% if p.variacion_kg > 0 %}
+                      <span style="font-size:.7rem;font-weight:500;color:#16a34a;margin-left:.3rem;">▲ +{{ p.variacion_kg }}</span>
+                    {% elif p.variacion_kg < 0 %}
+                      <span style="font-size:.7rem;font-weight:500;color:#dc2626;margin-left:.3rem;">▼ {{ p.variacion_kg }}</span>
+                    {% endif %}
+                  {% endif %}
+                </div>
+                <div class="side-list-meta">
+                  <span>{{ p.fecha|date:"Y-m-d" }}</span>
+                  <span>{{ p.responsable|default:"—" }}</span>
+                </div>
               </div>
-              <div class="side-list-meta">
-                <span>{{ p.fecha|date:"Y-m-d" }}</span>
-                <span>#{{ forloop.counter }}</span>
-              </div>
-            </div>
+            </a>
           {% endfor %}
         {% else %}
           <div class="text-muted small">No hay pesajes registrados.</div>

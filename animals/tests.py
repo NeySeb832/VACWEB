@@ -17,8 +17,6 @@ Correspondencia con los CP del documento CU-002:
   CP-08 → OMITIDO (módulo de transacciones no implementado aún)
 """
 
-from decimal import Decimal
-
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
@@ -26,7 +24,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from authz.models import Permission, Role, RolePermission, UserRole
-from .models import Animal, EventoSanitario, Movimiento, Pesaje, Potrero
+from .models import Animal, Movimiento, Potrero
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -417,25 +415,6 @@ class AnimalVistaTests(TestCase):
         nuevo = Animal.objects.get(rfid="COL-NEW-001")
         self.assertEqual(nuevo.estado, Animal.Estado.BORRADOR)
         self.assertRedirects(r, reverse("animals:detail", args=[nuevo.pk]))
-
-    # ── CP-VISTA-07 ──────────────────────────────────────────────────────────
-    def test_create_post_con_peso_inicial_crea_pesaje(self):
-        """POST con peso_inicial → se crea un Pesaje asociado al animal nuevo."""
-        data = {
-            "rfid": "COL-PESO-001",
-            "arete": "A-PESO-001",
-            "sexo": Animal.Sexo.MACHO,
-            "etapa": Animal.Etapa.LEVANTE,
-            "raza": "Brahman",
-            "potrero": self.potrero.pk,
-            "estado": Animal.Estado.ACTIVO,
-            "motivo_baja": "",
-            "peso_inicial": "254.50",
-        }
-        self.client.post(reverse("animals:create"), data)
-        animal = Animal.objects.get(rfid="COL-PESO-001")
-        self.assertEqual(animal.pesajes.count(), 1)
-        self.assertEqual(animal.pesajes.first().peso_kg, Decimal("254.50"))
 
     # ── CP-VISTA-08 ──────────────────────────────────────────────────────────
     def test_create_post_activo_sin_datos_minimos_no_crea(self):
