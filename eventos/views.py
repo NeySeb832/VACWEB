@@ -1,6 +1,6 @@
 # eventos/views.py
 """Vistas del módulo de Eventos Sanitarios (CU-003).
-Registro, detalle, corrección y anulación de vacunas/tratamientos.
+Registro, detalle, corrección, cancelación y realización de vacunas/tratamientos.
 """
 
 from django.contrib.auth.decorators import login_required
@@ -19,7 +19,7 @@ from .forms import EventoSanitarioForm, CorreccionEventoForm
 def evento_list(request):
     """Lista de eventos sanitarios con filtros opcionales.
 
-    Filtros GET: ?q=<tipo|responsable>, ?animal=<id>, ?estado=<CON|ANU>
+    Filtros GET: ?q=<tipo|responsable>, ?animal=<id>, ?estado=<CON|APL|CAN|REA>
     Paginación: 25 por página.
     Contexto: page_obj, total, q, animal_filter, estado, animales
     """
@@ -97,6 +97,7 @@ def evento_detail(request, pk: int):
     ctx = {
         "evento": evento,
         "correcciones": correcciones,
+        "puede_modificarse": evento.puede_modificarse,
     }
     return render(request, "eventos/evento_detail.html", ctx)
 
@@ -104,7 +105,7 @@ def evento_detail(request, pk: int):
 @login_required
 @require_perm("eventos.write")
 def evento_correccion(request, pk: int):
-    """Registrar una corrección sobre un evento CONFIRMADO.
+    """Registrar una corrección sobre un evento CONFIRMADO o APLAZADO.
 
     GET  → muestra el formulario precargado con los datos del original.
     POST → crea un nuevo EventoSanitario con:
@@ -113,11 +114,12 @@ def evento_correccion(request, pk: int):
              - animal = heredado del original
              - created_by = request.user
            El evento original NO se modifica.
+    Solo acepta eventos en estados mutables (CONFIRMADO o APLAZADO).
     """
     evento_original = get_object_or_404(
         EventoSanitario.objects.select_related("animal"),
         pk=pk,
-        estado=EventoSanitario.Estado.CONFIRMADO,
+        estado__in=list(EventoSanitario.ESTADOS_MUTABLES),
     )
 
     if request.method == "POST":
@@ -152,27 +154,55 @@ def evento_correccion(request, pk: int):
 
 @login_required
 @require_perm("eventos.write")
-def evento_anular(request, pk: int):
-    """Anular un evento existente.
+def evento_cancelar(request, pk: int):
+    """Cancelar un evento CONFIRMADO o APLAZADO.
 
-    Solo acepta POST. Cambia el estado a ANULADO.
+    Solo acepta POST. Cambia el estado a CANCELADO.
     Requiere campo 'motivo' en POST: se antepone a las notas existentes.
     """
     if request.method != "POST":
         return redirect("eventos:detail", pk=pk)
 
-    evento = get_object_or_404(EventoSanitario, pk=pk)
+    evento = get_object_or_404(
+        EventoSanitario,
+        pk=pk,
+        estado__in=list(EventoSanitario.ESTADOS_MUTABLES),
+    )
     motivo = request.POST.get("motivo", "").strip()
 
     if motivo:
-        if evento.notas:
-            evento.notas = f"[Motivo de anulación: {motivo}]\n\n{evento.notas}"
-        else:
-            evento.notas = f"[Motivo de anulación: {motivo}]"
+        prefijo = f"[Motivo de cancelación: {motivo}]"
+        evento.notas = f"{prefijo}\n\n{evento.notas}" if evento.notas else prefijo
 
-    evento.estado = EventoSanitario.Estado.ANULADO
-    # save() directo con update_fields: la anulación es una acción administrativa;
-    # la RN-3 del clean() solo aplica a instancias nuevas (not self.pk).
+    evento.estado = EventoSanitario.Estado.CANCELADO
+    evento.save(update_fields=["estado", "notas"])
+
+    return redirect("eventos:detail", pk=pk)
+
+
+@login_required
+@require_perm("eventos.write")
+def evento_realizar(request, pk: int):
+    """Marcar un evento CONFIRMADO o APLAZADO como REALIZADO.
+
+    Solo acepta POST. Cambia el estado a REALIZADO.
+    Acepta campo opcional 'notas' en POST para agregar observaciones de cierre.
+    """
+    if request.method != "POST":
+        return redirect("eventos:detail", pk=pk)
+
+    evento = get_object_or_404(
+        EventoSanitario,
+        pk=pk,
+        estado__in=list(EventoSanitario.ESTADOS_MUTABLES),
+    )
+    notas_cierre = request.POST.get("notas_cierre", "").strip()
+
+    if notas_cierre:
+        prefijo = f"[Notas de cierre: {notas_cierre}]"
+        evento.notas = f"{evento.notas}\n\n{prefijo}" if evento.notas else prefijo
+
+    evento.estado = EventoSanitario.Estado.REALIZADO
     evento.save(update_fields=["estado", "notas"])
 
     return redirect("eventos:detail", pk=pk)

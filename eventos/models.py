@@ -15,14 +15,24 @@ class EventoSanitario(models.Model):
     Reglas de negocio:
       - RN-1: fecha, tipo, responsable y producto son obligatorios.
       - RN-2: no se puede registrar un evento en un animal INACTIVO.
-      - RN-3: un evento ANULADO debe tener evento_original vinculado
-              (solo se crea ANULADO vía la vista evento_anular sobre un evento existente).
-      - RN-4: evento_original apunta al evento que se corrige; permite rastrear cadena.
+      - RN-3: un evento en estado CANCELADO o REALIZADO es inmutable;
+              no puede modificarse una vez alcanzado ese estado.
+      - RN-4: solo se puede pasar a CANCELADO o REALIZADO desde
+              CONFIRMADO o APLAZADO.
+      - RN-5: evento_original apunta al evento que se corrige; permite
+              rastrear la cadena de correcciones.
     """
 
     class Estado(models.TextChoices):
         CONFIRMADO = "CON", "Confirmado"
-        ANULADO = "ANU", "Anulado"
+        APLAZADO = "APL", "Aplazado"
+        CANCELADO = "CAN", "Cancelado"
+        REALIZADO = "REA", "Realizado"
+
+    # Estados en los que el evento aún puede editarse
+    ESTADOS_MUTABLES = frozenset({Estado.CONFIRMADO, Estado.APLAZADO})
+    # Estados terminales: el evento queda bloqueado
+    ESTADOS_TERMINALES = frozenset({Estado.CANCELADO, Estado.REALIZADO})
 
     animal = models.ForeignKey(
         "animals.Animal",
@@ -90,14 +100,31 @@ class EventoSanitario(models.Model):
                         {"animal": "No se pueden registrar eventos en un animal inactivo."}
                     )
 
-        # RN-3: ANULADO solo en instancias ya persistidas (via evento_anular)
-        # Para nuevas instancias, ANULADO requiere evento_original
-        if self.estado == self.Estado.ANULADO and not self.pk and not self.evento_original_id:
+        # RN-3: inmutabilidad — si ya existe y está en estado terminal, no se puede editar
+        if self.pk:
+            try:
+                actual = EventoSanitario.objects.get(pk=self.pk)
+            except EventoSanitario.DoesNotExist:
+                pass
+            else:
+                if actual.estado in self.ESTADOS_TERMINALES:
+                    raise ValidationError(
+                        "Este evento ya está finalizado ("
+                        f"{actual.get_estado_display()}) y no puede modificarse."
+                    )
+
+        # RN-4: nuevos eventos solo pueden crearse en estado CONFIRMADO o APLAZADO
+        if not self.pk and self.estado in self.ESTADOS_TERMINALES:
             raise ValidationError(
-                {"estado": "Un evento nuevo en estado Anulado debe indicar el evento original."}
+                {"estado": "Un nuevo evento debe crearse en estado Confirmado o Aplazado."}
             )
 
         return super().clean()
+
+    @property
+    def puede_modificarse(self) -> bool:
+        """True si el estado actual permite editar el evento."""
+        return self.estado in self.ESTADOS_MUTABLES
 
     @property
     def es_correccion(self) -> bool:

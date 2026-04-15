@@ -2,18 +2,25 @@ from django.contrib import admin
 
 from .models import Potrero, Animal, Movimiento
 from eventos.models import EventoSanitario
+from pesajes.models import Pesaje
 
 
-@admin.register(Potrero)
-class PotreroAdmin(admin.ModelAdmin):
-    list_display = ("nombre", "activo")
-    list_filter = ("activo",)
-    search_fields = ("nombre",)
+# Potrero ahora gestionado en potreros/admin.py (CU-005)
 
 
 class EventoSanitarioInline(admin.TabularInline):
     model = EventoSanitario
     extra = 0
+
+
+class PesajeInline(admin.TabularInline):
+    model = Pesaje
+    extra = 0
+    readonly_fields = ("fecha", "peso_kg", "variacion_kg", "promedio_diario_g", "responsable", "created_at")
+    can_delete = False
+
+    def has_change_permission(self, request, obj=None):
+        return False
 
 
 class MovimientoInline(admin.TabularInline):
@@ -50,7 +57,7 @@ class AnimalAdmin(admin.ModelAdmin):
         ("Auditoría", {"fields": ("created_at", "updated_at", "last_modified_by")}),
     )
 
-    inlines = [EventoSanitarioInline, MovimientoInline]
+    inlines = [EventoSanitarioInline, PesajeInline, MovimientoInline]
 
     def save_model(self, request, obj, form, change):
         obj.last_modified_by = request.user

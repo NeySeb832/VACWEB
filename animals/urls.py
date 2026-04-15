@@ -21,6 +21,9 @@ urlpatterns = [
 
     # Baja lógica / cambio de estado (ej. ACT → INA) – opcionalmente con motivo
     path("<int:pk>/baja/", views.animal_baja, name="baja"),
+
+    # Cambio rápido de potrero (solo actualiza ese campo)
+    path("<int:pk>/potrero/", views.animal_assign_potrero, name="assign_potrero"),
 ]
 
 if settings.DEBUG:

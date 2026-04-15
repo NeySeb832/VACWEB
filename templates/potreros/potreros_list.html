@@ -1,0 +1,555 @@
+{% extends "base/menu_base.html" %}
+{% load static %}
+
+{% block title %}Lotes / Potreros · Control Ganadero{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ---------- cabecera de módulo ---------- */
+  .page-header-row{
+    display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;
+  }
+  .page-title{font-size:1.05rem;font-weight:600;}
+  .page-subtitle{font-size:.8rem;color:#6b7280;}
+
+  /* ---------- botón principal ---------- */
+  .btn-new-potrero{
+    border-radius:999px;padding:.4rem 1.25rem;font-size:.86rem;
+    background:#020617;border-color:#020617;color:#f9fafb;
+    display:inline-flex;align-items:center;gap:.4rem;
+  }
+  .btn-new-potrero:hover{background:#020617;opacity:.9;color:#f9fafb;}
+
+  /* ---------- filtros ---------- */
+  .filters-card{
+    background:#fff;border-radius:14px;padding:.9rem 1.1rem;
+    border:1px solid #e5e7eb;margin-bottom:1rem;
+  }
+  .filters-row{
+    display:grid;
+    grid-template-columns:minmax(0,3fr) minmax(0,1.2fr) minmax(0,1.2fr);
+    gap:.75rem;
+  }
+  .search-box{position:relative;}
+  .search-box input{padding-left:2.2rem;}
+  .search-box .bi-search{
+    position:absolute;left:.65rem;top:50%;transform:translateY(-50%);
+    color:#9ca3af;font-size:.9rem;
+  }
+
+  /* ---------- tarjeta de potrero ---------- */
+  .potrero-card{
+    background:#fff;border-radius:14px;border:1px solid #e5e7eb;
+    padding:1rem 1.15rem;position:relative;
+  }
+  .potrero-card-header{
+    display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.5rem;
+  }
+  .potrero-nombre{font-weight:600;font-size:.95rem;}
+
+  .pill{
+    display:inline-flex;align-items:center;border-radius:999px;
+    padding:.12rem .65rem;font-size:.72rem;font-weight:500;
+  }
+  .pill-activo{background:#bbf7d0;color:#166534;}
+  .pill-inactivo{background:#e5e7eb;color:#4b5563;}
+  .pill-tipo{background:#e0e7ff;color:#3730a3;margin-left:.35rem;}
+
+  /* barra de ocupación */
+  .progress-wrap{margin:.6rem 0 .35rem;}
+  .progress{height:7px;border-radius:999px;background:#e5e7eb;}
+  .progress-bar-green{background:#22c55e;}
+  .progress-bar-orange{background:#f97316;}
+  .progress-bar-red{background:#ef4444;}
+  .ocu-label{font-size:.78rem;color:#6b7280;display:flex;justify-content:space-between;}
+
+  .potrero-meta{font-size:.78rem;color:#6b7280;margin-top:.4rem;}
+  .potrero-actions{display:flex;gap:.4rem;margin-top:.75rem;}
+  .btn-action{
+    border-radius:999px;font-size:.78rem;padding:.25rem .75rem;
+    display:inline-flex;align-items:center;gap:.3rem;
+  }
+
+  /* ---------- sección de lotes ---------- */
+  .section-label{
+    font-size:.8rem;font-weight:600;color:#374151;
+    margin-top:1.25rem;margin-bottom:.6rem;
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .section-meta{font-size:.75rem;color:#9ca3af;font-weight:400;}
+  .potreros-grid{display:grid;grid-template-columns:1fr 1fr;gap:.85rem;}
+
+  /* ---------- resumen footer ---------- */
+  .resumen-bar{
+    background:#fff;border-radius:14px;border:1px solid #e5e7eb;
+    padding:.85rem 1.25rem;margin-top:1.25rem;
+    display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;text-align:center;
+  }
+  .resumen-stat{
+    display:flex;flex-direction:column;gap:.1rem;
+  }
+  .resumen-num{font-weight:700;font-size:1.1rem;}
+  .resumen-lbl{font-size:.75rem;color:#9ca3af;}
+
+  /* ---------- vacío ---------- */
+  .empty-state{
+    text-align:center;padding:3rem 1rem;color:#9ca3af;
+  }
+  .empty-state i{font-size:2.5rem;display:block;margin-bottom:.75rem;}
+
+  @media(max-width:992px){
+    .filters-row{grid-template-columns:minmax(0,1fr);}
+    .page-header-row{flex-direction:column;align-items:flex-start;gap:.5rem;}
+    .potreros-grid{grid-template-columns:1fr;}
+    .resumen-bar{grid-template-columns:repeat(2,1fr);}
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ============================================================
+     CABECERA
+============================================================ -->
+<div class="page-header-row">
+  <div>
+    <div class="page-title">Gestión de Lotes / Potreros</div>
+    <div class="page-subtitle">
+      Administra los lotes y potreros de tus fincas. Controla la capacidad y ocupación de cada potrero.
+    </div>
+  </div>
+  {% if puede_escribir %}
+  <div>
+    <button class="btn btn-new-potrero" id="btn-abrir-modal-crear">
+      <i class="bi bi-plus-lg"></i>
+      Nuevo Potrero
+    </button>
+  </div>
+  {% endif %}
+</div>
+
+<!-- ============================================================
+     FILTROS
+============================================================ -->
+<div class="filters-card">
+  <form method="get" id="form-filtros">
+    <div class="filters-row">
+      <div class="search-box">
+        <i class="bi bi-search"></i>
+        <input
+          type="text" class="form-control form-control-sm"
+          name="q" value="{{ q }}"
+          placeholder="Buscar por nombre o código..."
+          oninput="document.getElementById('form-filtros').submit()"
+        >
+      </div>
+      <div>
+        <select class="form-select form-select-sm" name="estado" onchange="this.form.submit()">
+          <option value="">Todos los estados</option>
+          {% for val, lbl in estado_choices %}
+            <option value="{{ val }}" {% if estado_filtro == val %}selected{% endif %}>{{ lbl }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <select class="form-select form-select-sm" name="tipo" onchange="this.form.submit()">
+          <option value="">Todos los tipos</option>
+          {% for val, lbl in tipo_choices %}
+            <option value="{{ val }}" {% if tipo_filtro == val %}selected{% endif %}>{{ lbl }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- ============================================================
+     LISTADO DE POTREROS
+============================================================ -->
+{% if page_obj.object_list %}
+  <div class="section-label">
+    Potreros
+    <span class="section-meta">{{ total }} resultado{% if total != 1 %}s{% endif %}</span>
+  </div>
+
+  <div class="potreros-grid" id="potreros-grid">
+    {% for item in page_obj.object_list %}
+      {% with p=item.potrero pct=item.porcentaje act=item.activos disp=item.disponibles %}
+      <div class="potrero-card" id="potrero-card-{{ p.pk }}">
+        <div class="potrero-card-header">
+          <div>
+            <div class="potrero-nombre">{{ p.nombre_codigo }}</div>
+            <div style="margin-top:.2rem">
+              <span class="pill {% if p.estado == 'ACTIVO' %}pill-activo{% else %}pill-inactivo{% endif %}">
+                {{ p.get_estado_display }}
+              </span>
+              <span class="pill pill-tipo">{{ p.get_tipo_uso_display }}</span>
+            </div>
+          </div>
+          <a href="{% url 'potreros:detail' p.pk %}" class="text-muted" title="Ver detalle">
+            <i class="bi bi-eye"></i>
+          </a>
+        </div>
+
+        <div class="potrero-meta">
+          Animales: <strong>{{ act }}</strong> / {{ p.capacidad_maxima }}
+          &nbsp;·&nbsp; Área: {{ p.area_ha }} ha
+        </div>
+
+        <!-- Barra de ocupación -->
+        <div class="progress-wrap">
+          <div class="ocu-label">
+            <span>Ocupación</span>
+            <span>{{ pct }}%</span>
+          </div>
+          <div class="progress mt-1">
+            <div
+              class="progress-bar {% if pct >= 100 %}progress-bar-red{% elif pct >= 75 %}progress-bar-orange{% else %}progress-bar-green{% endif %}"
+              role="progressbar"
+              style="width:{{ pct|floatformat:0 }}%"
+              aria-valuenow="{{ pct }}"
+              aria-valuemin="0"
+              aria-valuemax="100">
+            </div>
+          </div>
+        </div>
+
+        <div class="potrero-meta">
+          <i class="bi bi-box-arrow-in-down text-muted"></i>
+          {{ disp }} espacio{% if disp != 1 %}s{% endif %} disponible{% if disp != 1 %}s{% endif %}
+        </div>
+
+        {% if puede_escribir and p.estado == 'ACTIVO' %}
+        <div class="potrero-actions">
+          <button
+            class="btn btn-sm btn-outline-secondary btn-action btn-editar"
+            data-pk="{{ p.pk }}"
+            title="Editar potrero">
+            <i class="bi bi-pencil"></i> Editar
+          </button>
+          <button
+            class="btn btn-sm btn-outline-danger btn-action btn-desactivar"
+            data-pk="{{ p.pk }}"
+            data-nombre="{{ p.nombre_codigo|escapejs }}"
+            title="Desactivar potrero">
+            <i class="bi bi-trash3"></i> Desactivar
+          </button>
+        </div>
+        {% endif %}
+      </div>
+      {% endwith %}
+    {% endfor %}
+  </div>
+
+  <!-- Paginación -->
+  {% if page_obj.paginator.num_pages > 1 %}
+  <nav class="mt-3">
+    <ul class="pagination pagination-sm mb-0 justify-content-end">
+      {% if page_obj.has_previous %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ q }}&estado={{ estado_filtro }}&tipo={{ tipo_filtro }}">«</a>
+        </li>
+      {% else %}
+        <li class="page-item disabled"><span class="page-link">«</span></li>
+      {% endif %}
+      {% for num in page_obj.paginator.page_range %}
+        {% if num == page_obj.number %}
+          <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+        {% else %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ num }}&q={{ q }}&estado={{ estado_filtro }}&tipo={{ tipo_filtro }}">{{ num }}</a>
+          </li>
+        {% endif %}
+      {% endfor %}
+      {% if page_obj.has_next %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ q }}&estado={{ estado_filtro }}&tipo={{ tipo_filtro }}">»</a>
+        </li>
+      {% else %}
+        <li class="page-item disabled"><span class="page-link">»</span></li>
+      {% endif %}
+    </ul>
+  </nav>
+  {% endif %}
+
+{% else %}
+  <!-- Estado vacío -->
+  <div class="empty-state">
+    <i class="bi bi-grid-3x3-gap"></i>
+    <div style="font-weight:600;color:#374151;margin-bottom:.35rem;">No hay potreros registrados</div>
+    <div style="font-size:.85rem;">
+      {% if puede_escribir %}
+        Crea el primero con el botón "+ Nuevo Potrero".
+      {% else %}
+        Aún no se han registrado potreros en el sistema.
+      {% endif %}
+    </div>
+  </div>
+{% endif %}
+
+<!-- ============================================================
+     RESUMEN GENERAL
+============================================================ -->
+<div class="resumen-bar">
+  <div class="resumen-stat">
+    <span class="resumen-num">{{ resumen.total_potreros }}</span>
+    <span class="resumen-lbl">Total Lotes</span>
+  </div>
+  <div class="resumen-stat">
+    <span class="resumen-num">{{ resumen.animales_activos }}</span>
+    <span class="resumen-lbl">Animales Activos</span>
+  </div>
+  <div class="resumen-stat">
+    <span class="resumen-num">{{ resumen.capacidad_total }}</span>
+    <span class="resumen-lbl">Capacidad Total</span>
+  </div>
+  <div class="resumen-stat">
+    <span class="resumen-num">{{ resumen.ocupacion_global }}%</span>
+    <span class="resumen-lbl">Ocupación Global</span>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODAL CREAR / EDITAR POTRERO
+============================================================ -->
+<div class="modal fade" id="modalPotrero" tabindex="-1" aria-labelledby="modalPotreroLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title mb-0" id="modalPotreroLabel">Nuevo Potrero</h5>
+          <small class="text-muted" id="modalPotreroSub">Completa la información para registrar un nuevo lote o potrero.</small>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="modalPotreroBody">
+        <!-- Contenido cargado por AJAX -->
+        <div class="text-center py-4">
+          <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
+        </div>
+      </div>
+      <div class="modal-footer" id="modalPotreroFooter">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-sm" id="btnSubmitPotrero"
+                style="background:#020617;color:#f9fafb;border-radius:999px;padding:.3rem 1.2rem;">
+          Crear Potrero
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODAL CONFIRMAR DESACTIVACIÓN
+============================================================ -->
+<div class="modal fade" id="modalDesactivar" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title">Confirmar desactivación</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" style="font-size:.88rem;">
+        ¿Está seguro de que desea desactivar el potrero <strong id="desactivarNombre"></strong>?
+        Esta acción no puede revertirse sin contactar al Administrador.
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-sm btn-danger" id="btnConfirmarDesactivar"
+                style="border-radius:999px;">
+          Confirmar desactivación
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODAL ERROR BLOQUEO (animales activos)
+============================================================ -->
+<div class="modal fade" id="modalBloqueo" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-danger-subtle">
+        <h6 class="modal-title text-danger">
+          <i class="bi bi-exclamation-triangle me-1"></i>
+          No se puede desactivar
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p id="bloqueoMsg" style="font-size:.88rem;"></p>
+        <div id="bloqueoAnimales"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <a href="{% url 'animals:list' %}" class="btn btn-sm"
+           style="background:#020617;color:#f9fafb;border-radius:999px;padding:.3rem 1.2rem;">
+          Ir al módulo de Animales
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  'use strict';
+
+  const CSRF = document.cookie.match(/csrftoken=([^;]+)/)?.[1] ?? '';
+
+  // Instancias de Modal
+  const modalPotrero   = new bootstrap.Modal(document.getElementById('modalPotrero'));
+  const modalDesactivar = new bootstrap.Modal(document.getElementById('modalDesactivar'));
+  const modalBloqueo   = new bootstrap.Modal(document.getElementById('modalBloqueo'));
+
+  let pkActualEdicion  = null;
+  let pkActualDesactivar = null;
+
+  /* ---- helpers ---- */
+  function setCargando(si) {
+    document.getElementById('btnSubmitPotrero').disabled = si;
+  }
+
+  function mostrarErrores(errors) {
+    // Limpia errores previos
+    document.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
+    document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+
+    for (const [campo, msgs] of Object.entries(errors)) {
+      const input = document.querySelector(`[name="${campo}"]`);
+      if (input) {
+        input.classList.add('is-invalid');
+        const fb = document.createElement('div');
+        fb.className = 'invalid-feedback d-block';
+        fb.textContent = Array.isArray(msgs) ? msgs[0] : msgs;
+        input.parentNode.appendChild(fb);
+      }
+    }
+  }
+
+  /* ---- abrir modal creación ---- */
+  const btnCrear = document.getElementById('btn-abrir-modal-crear');
+  if (btnCrear) {
+    btnCrear.addEventListener('click', function () {
+      pkActualEdicion = null;
+      document.getElementById('modalPotreroLabel').textContent = 'Nuevo Potrero';
+      document.getElementById('modalPotreroSub').textContent   = 'Completa la información para registrar un nuevo lote o potrero.';
+      document.getElementById('btnSubmitPotrero').textContent  = 'Crear Potrero';
+      document.getElementById('modalPotreroBody').innerHTML    =
+        '<div class="text-center py-4"><div class="spinner-border spinner-border-sm text-secondary"></div></div>';
+      modalPotrero.show();
+
+      fetch("{% url 'potreros:create' %}", {
+        headers: {'X-Requested-With': 'XMLHttpRequest'},
+      })
+      .then(r => r.json())
+      .then(data => {
+        document.getElementById('modalPotreroBody').innerHTML = data.html;
+      });
+    });
+  }
+
+  /* ---- abrir modal edición ---- */
+  document.addEventListener('click', function (e) {
+    const btn = e.target.closest('.btn-editar');
+    if (!btn) return;
+    pkActualEdicion = btn.dataset.pk;
+    document.getElementById('modalPotreroLabel').textContent = 'Editar Potrero';
+    document.getElementById('modalPotreroSub').textContent   = 'Modifica los datos del potrero seleccionado.';
+    document.getElementById('btnSubmitPotrero').textContent  = 'Guardar Cambios';
+    document.getElementById('modalPotreroBody').innerHTML    =
+      '<div class="text-center py-4"><div class="spinner-border spinner-border-sm text-secondary"></div></div>';
+    modalPotrero.show();
+
+    fetch(`/potreros/${pkActualEdicion}/editar/`, {
+      headers: {'X-Requested-With': 'XMLHttpRequest'},
+    })
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById('modalPotreroBody').innerHTML = data.html;
+    });
+  });
+
+  /* ---- submit crear / editar ---- */
+  document.getElementById('btnSubmitPotrero').addEventListener('click', function () {
+    const form = document.getElementById('potrero-form');
+    if (!form) return;
+    const fd   = new FormData(form);
+    const url  = pkActualEdicion
+      ? `/potreros/${pkActualEdicion}/editar/`
+      : "{% url 'potreros:create' %}";
+
+    setCargando(true);
+    fetch(url, {
+      method:  'POST',
+      headers: {
+        'X-CSRFToken':    CSRF,
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+      body: fd,
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        modalPotrero.hide();
+        if (data.warning) {
+          alert('Advertencia: ' + data.warning);
+        }
+        location.reload();
+      } else {
+        mostrarErrores(data.errors || {});
+      }
+    })
+    .catch(() => alert('Error de red. Intenta de nuevo.'))
+    .finally(() => setCargando(false));
+  });
+
+  /* ---- abrir modal desactivar ---- */
+  document.addEventListener('click', function (e) {
+    const btn = e.target.closest('.btn-desactivar');
+    if (!btn) return;
+    pkActualDesactivar = btn.dataset.pk;
+    document.getElementById('desactivarNombre').textContent = '"' + btn.dataset.nombre + '"';
+    modalDesactivar.show();
+  });
+
+  /* ---- confirmar desactivación ---- */
+  document.getElementById('btnConfirmarDesactivar').addEventListener('click', function () {
+    if (!pkActualDesactivar) return;
+    const btn = this;
+    btn.disabled = true;
+
+    fetch(`/potreros/${pkActualDesactivar}/desactivar/`, {
+      method:  'POST',
+      headers: {
+        'X-CSRFToken':    CSRF,
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+    })
+    .then(r => r.json())
+    .then(data => {
+      modalDesactivar.hide();
+      if (data.success) {
+        location.reload();
+      } else if (data.blocked) {
+        document.getElementById('bloqueoMsg').textContent = data.message;
+        const lista = (data.animales || []).map(
+          a => `<li>${a.rfid} — ${a.nombre_alias}</li>`
+        ).join('');
+        document.getElementById('bloqueoAnimales').innerHTML =
+          lista ? `<ul class="mb-0" style="font-size:.83rem;">${lista}</ul>` : '';
+        modalBloqueo.show();
+      } else {
+        alert(data.message || 'Error al desactivar.');
+      }
+    })
+    .catch(() => alert('Error de red. Intenta de nuevo.'))
+    .finally(() => { btn.disabled = false; });
+  });
+})();
+</script>
+{% endblock %}

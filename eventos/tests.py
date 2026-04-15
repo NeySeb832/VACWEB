@@ -2,9 +2,9 @@
 """
 Pruebas funcionales – CU-003: Registro de Vacunas y Tratamientos
 =================================================================
-Bloque 1 – Modelo y Reglas de Negocio  (CP-MODEL-01 … CP-MODEL-11)
+Bloque 1 – Modelo y Reglas de Negocio  (CP-MODEL-01 … CP-MODEL-12)
 Bloque 2 – RBAC y Control de Acceso    (CP-RBAC-01  … CP-RBAC-10)
-Bloque 3 – Vistas                      (CP-VISTA-01 … CP-VISTA-15)
+Bloque 3 – Vistas                      (CP-VISTA-01 … CP-VISTA-17)
 
 Correspondencia con los CP del documento CU-003:
   CP-EV-01 → CP-VISTA-07  (registro válido → CONFIRMADO)
@@ -42,7 +42,13 @@ def grant_perm(user: User, perm_code: str) -> None:
 
 
 def make_potrero(nombre: str = "P1") -> Potrero:
-    return Potrero.objects.create(nombre=nombre, activo=True)
+    return Potrero.objects.create(
+        nombre_codigo=nombre,
+        estado="ACTIVO",
+        area_ha="10.00",
+        capacidad_maxima=50,
+        tipo_uso="CEBA",
+    )
 
 
 def make_animal(potrero: Potrero, rfid: str = "COL-EV-001",
@@ -78,7 +84,8 @@ class EventoModelRNTests(TestCase):
     """
     Valida las reglas de negocio implementadas en EventoSanitario.clean():
     RN-1 (datos mínimos obligatorios), RN-2 (animal no INACTIVO),
-    RN-3 (ANULADO requiere evento_original), y propiedades derivadas.
+    RN-3 (inmutabilidad de estados terminales), RN-4 (nuevos eventos solo
+    en estados mutables), y propiedades derivadas.
     """
 
     def setUp(self):
@@ -147,7 +154,7 @@ class EventoModelRNTests(TestCase):
             responsable="vet01", producto="Producto X",
             created_by=self.user,
         )
-        ev.full_clean()  # no debe lanzar error
+        ev.full_clean()
         ev.save()
         self.assertEqual(EventoSanitario.objects.filter(pk=ev.pk).count(), 1)
 
@@ -159,17 +166,17 @@ class EventoModelRNTests(TestCase):
             responsable="vet01", producto="Ivermectina",
             created_by=self.user,
         )
-        ev.full_clean()  # no debe lanzar error
+        ev.full_clean()
         ev.save()
         self.assertEqual(EventoSanitario.objects.filter(pk=ev.pk).count(), 1)
 
     # ── CP-MODEL-07 ──────────────────────────────────────────────────────────
-    def test_rn3_nuevo_anulado_sin_original_lanza_error(self):
-        """RN-3: nueva instancia con estado ANULADO sin evento_original → ValidationError."""
+    def test_rn4_nuevo_evento_en_estado_cancelado_lanza_error(self):
+        """RN-4: nuevo evento con estado CANCELADO → ValidationError en campo 'estado'."""
         ev = EventoSanitario(
             animal=self.animal_activo, tipo="Vacuna Aftosa",
             responsable="vet01", producto="Producto X",
-            estado=EventoSanitario.Estado.ANULADO,
+            estado=EventoSanitario.Estado.CANCELADO,
             created_by=self.user,
         )
         with self.assertRaises(ValidationError) as ctx:
@@ -177,6 +184,56 @@ class EventoModelRNTests(TestCase):
         self.assertIn("estado", ctx.exception.message_dict)
 
     # ── CP-MODEL-08 ──────────────────────────────────────────────────────────
+    def test_rn4_nuevo_evento_en_estado_realizado_lanza_error(self):
+        """RN-4: nuevo evento con estado REALIZADO → ValidationError en campo 'estado'."""
+        ev = EventoSanitario(
+            animal=self.animal_activo, tipo="Vacuna Aftosa",
+            responsable="vet01", producto="Producto X",
+            estado=EventoSanitario.Estado.REALIZADO,
+            created_by=self.user,
+        )
+        with self.assertRaises(ValidationError) as ctx:
+            ev.full_clean()
+        self.assertIn("estado", ctx.exception.message_dict)
+
+    # ── CP-MODEL-09 ──────────────────────────────────────────────────────────
+    def test_rn3_evento_cancelado_no_puede_modificarse(self):
+        """RN-3: evento en estado CANCELADO → full_clean() lanza ValidationError."""
+        ev = make_evento(self.animal_activo, self.user)
+        ev.estado = EventoSanitario.Estado.CANCELADO
+        ev.save(update_fields=["estado"])
+        ev.tipo = "Otro tipo"
+        with self.assertRaises(ValidationError):
+            ev.full_clean()
+
+    # ── CP-MODEL-10 ──────────────────────────────────────────────────────────
+    def test_rn3_evento_realizado_no_puede_modificarse(self):
+        """RN-3: evento en estado REALIZADO → full_clean() lanza ValidationError."""
+        ev = make_evento(self.animal_activo, self.user)
+        ev.estado = EventoSanitario.Estado.REALIZADO
+        ev.save(update_fields=["estado"])
+        ev.tipo = "Otro tipo"
+        with self.assertRaises(ValidationError):
+            ev.full_clean()
+
+    # ── CP-MODEL-11 ──────────────────────────────────────────────────────────
+    def test_puede_modificarse_true_para_confirmado_y_aplazado(self):
+        """puede_modificarse retorna True para estados CONFIRMADO y APLAZADO."""
+        ev = make_evento(self.animal_activo, self.user)
+        self.assertTrue(ev.puede_modificarse)
+        ev.estado = EventoSanitario.Estado.APLAZADO
+        self.assertTrue(ev.puede_modificarse)
+
+    # ── CP-MODEL-12 ──────────────────────────────────────────────────────────
+    def test_puede_modificarse_false_para_cancelado_y_realizado(self):
+        """puede_modificarse retorna False para estados CANCELADO y REALIZADO."""
+        ev = make_evento(self.animal_activo, self.user)
+        ev.estado = EventoSanitario.Estado.CANCELADO
+        self.assertFalse(ev.puede_modificarse)
+        ev.estado = EventoSanitario.Estado.REALIZADO
+        self.assertFalse(ev.puede_modificarse)
+
+    # ── CP-MODEL-13 ──────────────────────────────────────────────────────────
     def test_es_correccion_true_con_original(self):
         """es_correccion retorna True cuando el evento tiene evento_original."""
         original = make_evento(self.animal_activo, self.user)
@@ -186,19 +243,19 @@ class EventoModelRNTests(TestCase):
         )
         self.assertTrue(correccion.es_correccion)
 
-    # ── CP-MODEL-09 ──────────────────────────────────────────────────────────
+    # ── CP-MODEL-14 ──────────────────────────────────────────────────────────
     def test_es_correccion_false_sin_original(self):
         """es_correccion retorna False cuando el evento no tiene evento_original."""
         ev = make_evento(self.animal_activo, self.user)
         self.assertFalse(ev.es_correccion)
 
-    # ── CP-MODEL-10 ──────────────────────────────────────────────────────────
+    # ── CP-MODEL-15 ──────────────────────────────────────────────────────────
     def test_estado_por_defecto_es_confirmado(self):
         """El estado por defecto de un nuevo evento es CONFIRMADO."""
         ev = make_evento(self.animal_activo, self.user)
         self.assertEqual(ev.estado, EventoSanitario.Estado.CONFIRMADO)
 
-    # ── CP-MODEL-11 ──────────────────────────────────────────────────────────
+    # ── CP-MODEL-16 ──────────────────────────────────────────────────────────
     def test_str_muestra_tipo_y_fecha(self):
         """__str__ retorna '{tipo} · {fecha:%Y-%m-%d}'."""
         ev = make_evento(self.animal_activo, self.user, tipo="Vacuna Brucelosis")
@@ -275,13 +332,19 @@ class EventoRBACTests(TestCase):
         self.assertEqual(r.status_code, 403)
 
     # ── CP-RBAC-08 ───────────────────────────────────────────────────────────
-    def test_anular_sin_permiso_write_retorna_403(self):
+    def test_cancelar_sin_permiso_write_retorna_403(self):
         self.client.login(username="user_read", password="testpass123")
-        r = self.client.post(reverse("eventos:anular", args=[self.evento.pk]),
+        r = self.client.post(reverse("eventos:cancelar", args=[self.evento.pk]),
                              {"motivo": "test"})
         self.assertEqual(r.status_code, 403)
 
     # ── CP-RBAC-09 ───────────────────────────────────────────────────────────
+    def test_realizar_sin_permiso_write_retorna_403(self):
+        self.client.login(username="user_read", password="testpass123")
+        r = self.client.post(reverse("eventos:realizar", args=[self.evento.pk]))
+        self.assertEqual(r.status_code, 403)
+
+    # ── CP-RBAC-10 ───────────────────────────────────────────────────────────
     def test_solo_read_puede_listar_y_ver_pero_no_crear(self):
         self.client.login(username="user_read", password="testpass123")
         self.assertEqual(self.client.get(reverse("eventos:list")).status_code, 200)
@@ -290,7 +353,7 @@ class EventoRBACTests(TestCase):
         )
         self.assertEqual(self.client.get(reverse("eventos:create")).status_code, 403)
 
-    # ── CP-RBAC-10 ───────────────────────────────────────────────────────────
+    # ── CP-RBAC-11 ───────────────────────────────────────────────────────────
     def test_write_puede_acceder_a_create_y_correccion(self):
         self.client.login(username="user_write", password="testpass123")
         self.assertEqual(self.client.get(reverse("eventos:create")).status_code, 200)
@@ -306,7 +369,8 @@ class EventoRBACTests(TestCase):
 class EventoVistaTests(TestCase):
     """
     Prueba el comportamiento funcional de todas las vistas del módulo
-    de eventos: listado, filtros, creación, detalle, corrección y anulación.
+    de eventos: listado, filtros, creación, detalle, corrección,
+    cancelación y realización.
     """
 
     def setUp(self):
@@ -323,11 +387,9 @@ class EventoVistaTests(TestCase):
         self.animal_ina = make_animal(self.potrero, rfid="COL-VIS-INA",
                                       estado=Animal.Estado.INACTIVO)
 
-        # Evento de referencia para detalle/corrección/anulación
         self.evento = make_evento(self.animal, self.user, tipo="Vacuna Aftosa")
 
     def _post_create(self, **overrides):
-        """Helper: POST válido a evento_create."""
         data = {
             "animal": self.animal.pk,
             "tipo": "Desparasitación",
@@ -369,14 +431,14 @@ class EventoVistaTests(TestCase):
             self.assertEqual(ev.animal_id, self.animal.pk)
 
     # ── CP-VISTA-04 ──────────────────────────────────────────────────────────
-    def test_list_filtro_por_estado_anulado(self):
-        """GET ?estado=ANU → solo retorna eventos ANULADOS."""
-        self.evento.estado = EventoSanitario.Estado.ANULADO
+    def test_list_filtro_por_estado_cancelado(self):
+        """GET ?estado=CAN → solo retorna eventos CANCELADOS."""
+        self.evento.estado = EventoSanitario.Estado.CANCELADO
         self.evento.save(update_fields=["estado"])
-        r = self.client.get(reverse("eventos:list") + "?estado=ANU")
+        r = self.client.get(reverse("eventos:list") + "?estado=CAN")
         self.assertEqual(r.status_code, 200)
         for ev in r.context["page_obj"].object_list:
-            self.assertEqual(ev.estado, EventoSanitario.Estado.ANULADO)
+            self.assertEqual(ev.estado, EventoSanitario.Estado.CANCELADO)
 
     # ── CP-VISTA-05 ──────────────────────────────────────────────────────────
     def test_create_get_retorna_formulario_vacio(self):
@@ -430,6 +492,7 @@ class EventoVistaTests(TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context["evento"].pk, self.evento.pk)
         self.assertIn("correcciones", r.context)
+        self.assertIn("puede_modificarse", r.context)
 
     # ── CP-VISTA-11 ──────────────────────────────────────────────────────────
     def test_correccion_get_sobre_confirmado_retorna_200(self):
@@ -438,20 +501,33 @@ class EventoVistaTests(TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertIn("form", r.context)
         self.assertEqual(r.context["evento"].pk, self.evento.pk)
-        # Formulario viene precargado con datos del original
-        self.assertEqual(
-            r.context["form"].initial.get("tipo"), self.evento.tipo
-        )
+        self.assertEqual(r.context["form"].initial.get("tipo"), self.evento.tipo)
 
     # ── CP-VISTA-12 ──────────────────────────────────────────────────────────
-    def test_correccion_get_sobre_anulado_retorna_404(self):
-        """GET correccion sobre evento ANULADO → 404 (get_object_or_404 filtra por CONFIRMADO)."""
-        self.evento.estado = EventoSanitario.Estado.ANULADO
+    def test_correccion_get_sobre_aplazado_retorna_200(self):
+        """GET /eventos/<pk>/correccion/ sobre evento APLAZADO → 200 (estado mutable)."""
+        self.evento.estado = EventoSanitario.Estado.APLAZADO
+        self.evento.save(update_fields=["estado"])
+        r = self.client.get(reverse("eventos:correccion", args=[self.evento.pk]))
+        self.assertEqual(r.status_code, 200)
+
+    # ── CP-VISTA-13 ──────────────────────────────────────────────────────────
+    def test_correccion_get_sobre_cancelado_retorna_404(self):
+        """GET correccion sobre evento CANCELADO → 404 (estado terminal, no mutable)."""
+        self.evento.estado = EventoSanitario.Estado.CANCELADO
         self.evento.save(update_fields=["estado"])
         r = self.client.get(reverse("eventos:correccion", args=[self.evento.pk]))
         self.assertEqual(r.status_code, 404)
 
-    # ── CP-VISTA-13 ──────────────────────────────────────────────────────────
+    # ── CP-VISTA-14 ──────────────────────────────────────────────────────────
+    def test_correccion_get_sobre_realizado_retorna_404(self):
+        """GET correccion sobre evento REALIZADO → 404 (estado terminal, no mutable)."""
+        self.evento.estado = EventoSanitario.Estado.REALIZADO
+        self.evento.save(update_fields=["estado"])
+        r = self.client.get(reverse("eventos:correccion", args=[self.evento.pk]))
+        self.assertEqual(r.status_code, 404)
+
+    # ── CP-VISTA-15 ──────────────────────────────────────────────────────────
     def test_correccion_post_crea_evento_vinculado_y_original_intacto(self):
         """POST corrección válida → nuevo evento con evento_original,
         animal heredado, original sin modificar. (CP-EV-07)"""
@@ -465,40 +541,78 @@ class EventoVistaTests(TestCase):
             "via_aplicacion": "",
             "notas": "Dosis corregida por error de registro",
         }
-        r = self.client.post(
-            reverse("eventos:correccion", args=[self.evento.pk]), data
-        )
+        r = self.client.post(reverse("eventos:correccion", args=[self.evento.pk]), data)
         self.assertEqual(r.status_code, 302)
 
-        # Corrección creada correctamente
         correccion = EventoSanitario.objects.latest("created_at")
         self.assertEqual(correccion.evento_original_id, self.evento.pk)
         self.assertEqual(correccion.animal_id, self.evento.animal_id)
         self.assertEqual(correccion.estado, EventoSanitario.Estado.CONFIRMADO)
         self.assertEqual(correccion.created_by, self.user)
 
-        # Evento original permanece CONFIRMADO e intacto
         self.evento.refresh_from_db()
         self.assertEqual(self.evento.estado, EventoSanitario.Estado.CONFIRMADO)
         self.assertEqual(self.evento.tipo, "Vacuna Aftosa")
 
-    # ── CP-VISTA-14 ──────────────────────────────────────────────────────────
-    def test_anular_post_cambia_estado_y_antepone_motivo(self):
-        """POST /eventos/<pk>/anular/ con motivo → estado ANULADO, motivo en notas."""
+    # ── CP-VISTA-16 ──────────────────────────────────────────────────────────
+    def test_cancelar_post_cambia_estado_y_antepone_motivo(self):
+        """POST /eventos/<pk>/cancelar/ con motivo → estado CANCELADO, motivo en notas."""
         r = self.client.post(
-            reverse("eventos:anular", args=[self.evento.pk]),
+            reverse("eventos:cancelar", args=[self.evento.pk]),
             {"motivo": "Error de registro duplicado"},
         )
         self.assertEqual(r.status_code, 302)
         self.evento.refresh_from_db()
-        self.assertEqual(self.evento.estado, EventoSanitario.Estado.ANULADO)
+        self.assertEqual(self.evento.estado, EventoSanitario.Estado.CANCELADO)
         self.assertIn("Error de registro duplicado", self.evento.notas)
 
-    # ── CP-VISTA-15 ──────────────────────────────────────────────────────────
-    def test_anular_get_redirige_a_detail_sin_cambios(self):
-        """GET /eventos/<pk>/anular/ → redirige a detail, estado no cambia."""
-        r = self.client.get(reverse("eventos:anular", args=[self.evento.pk]))
+    # ── CP-VISTA-17 ──────────────────────────────────────────────────────────
+    def test_cancelar_get_redirige_a_detail_sin_cambios(self):
+        """GET /eventos/<pk>/cancelar/ → redirige a detail, estado no cambia."""
+        r = self.client.get(reverse("eventos:cancelar", args=[self.evento.pk]))
         self.assertEqual(r.status_code, 302)
         self.assertRedirects(r, reverse("eventos:detail", args=[self.evento.pk]))
         self.evento.refresh_from_db()
         self.assertEqual(self.evento.estado, EventoSanitario.Estado.CONFIRMADO)
+
+    # ── CP-VISTA-18 ──────────────────────────────────────────────────────────
+    def test_realizar_post_cambia_estado_a_realizado(self):
+        """POST /eventos/<pk>/realizar/ → estado REALIZADO."""
+        r = self.client.post(
+            reverse("eventos:realizar", args=[self.evento.pk]),
+            {"notas_cierre": "Aplicado sin incidentes"},
+        )
+        self.assertEqual(r.status_code, 302)
+        self.evento.refresh_from_db()
+        self.assertEqual(self.evento.estado, EventoSanitario.Estado.REALIZADO)
+        self.assertIn("Aplicado sin incidentes", self.evento.notas)
+
+    # ── CP-VISTA-19 ──────────────────────────────────────────────────────────
+    def test_realizar_get_redirige_a_detail_sin_cambios(self):
+        """GET /eventos/<pk>/realizar/ → redirige a detail, estado no cambia."""
+        r = self.client.get(reverse("eventos:realizar", args=[self.evento.pk]))
+        self.assertEqual(r.status_code, 302)
+        self.assertRedirects(r, reverse("eventos:detail", args=[self.evento.pk]))
+        self.evento.refresh_from_db()
+        self.assertEqual(self.evento.estado, EventoSanitario.Estado.CONFIRMADO)
+
+    # ── CP-VISTA-20 ──────────────────────────────────────────────────────────
+    def test_cancelar_sobre_evento_terminal_retorna_404(self):
+        """POST cancelar sobre evento ya REALIZADO → 404 (no está en estado mutable)."""
+        self.evento.estado = EventoSanitario.Estado.REALIZADO
+        self.evento.save(update_fields=["estado"])
+        r = self.client.post(
+            reverse("eventos:cancelar", args=[self.evento.pk]),
+            {"motivo": "Intento inválido"},
+        )
+        self.assertEqual(r.status_code, 404)
+
+    # ── CP-VISTA-21 ──────────────────────────────────────────────────────────
+    def test_realizar_sobre_evento_terminal_retorna_404(self):
+        """POST realizar sobre evento ya CANCELADO → 404 (no está en estado mutable)."""
+        self.evento.estado = EventoSanitario.Estado.CANCELADO
+        self.evento.save(update_fields=["estado"])
+        r = self.client.post(
+            reverse("eventos:realizar", args=[self.evento.pk]),
+        )
+        self.assertEqual(r.status_code, 404)

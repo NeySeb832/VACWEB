@@ -5,7 +5,6 @@
 
 {% block extra_head %}
 <style>
-  /* ── Reutiliza el patrón de animal_detail.html ── */
   .detail-header{
     display:flex;
     align-items:center;
@@ -25,17 +24,10 @@
     color:#4b5563;
     text-decoration:none;
   }
-  .back-link i{
-    font-size:.9rem;
-  }
-  .detail-title{
-    font-size:1rem;
-    font-weight:600;
-  }
-  .detail-subtitle{
-    font-size:.78rem;
-    color:#6b7280;
-  }
+  .back-link i{ font-size:.9rem; }
+  .detail-title{ font-size:1rem; font-weight:600; }
+  .detail-subtitle{ font-size:.78rem; color:#6b7280; }
+
   /* Pills de estado */
   .pill-estado{
     display:inline-flex;
@@ -45,15 +37,12 @@
     font-size:.75rem;
     font-weight:500;
   }
-  .pill-estado-activo{          /* CONFIRMADO */
-    background:#020617;
-    color:#f9fafb;
-  }
-  .pill-estado-inactivo{        /* ANULADO */
-    background:#e5e7eb;
-    color:#4b5563;
-  }
-  /* Layout 2 columnas */
+  .pill-confirmado { background:#020617; color:#f9fafb; }
+  .pill-aplazado   { background:#fef3c7; color:#92400e; }
+  .pill-realizado  { background:#dcfce7; color:#166534; }
+  .pill-cancelado  { background:#e5e7eb; color:#4b5563; }
+
+  /* Layout */
   .detail-layout{
     display:grid;
     grid-template-columns:minmax(0,2.3fr) minmax(0,1.3fr);
@@ -66,28 +55,15 @@
     padding:1rem 1.1rem;
     margin-bottom:.75rem;
   }
-  .section-title{
-    font-size:.82rem;
-    font-weight:600;
-    margin-bottom:.4rem;
-  }
-  .section-body{
-    font-size:.8rem;
-  }
+  .section-title{ font-size:.82rem; font-weight:600; margin-bottom:.4rem; }
+  .section-body{ font-size:.8rem; }
   .info-grid{
     display:grid;
     grid-template-columns:minmax(0,1fr) minmax(0,1fr);
     gap:.35rem .75rem;
   }
-  .info-label{
-    font-size:.76rem;
-    color:#6b7280;
-  }
-  .info-value{
-    font-size:.8rem;
-    font-weight:500;
-  }
-  /* Card del evento original (corrección) */
+  .info-label{ font-size:.76rem; color:#6b7280; }
+  .info-value{ font-size:.8rem; font-weight:500; }
   .original-card{
     background:#f8fafc;
     border:1px solid #e2e8f0;
@@ -95,16 +71,9 @@
     padding:.75rem 1rem;
     font-size:.82rem;
   }
-  .original-card .info-label{
-    color:#94a3b8;
-  }
-  .original-card .info-value{
-    color:#475569;
-  }
-  /* Lista de correcciones */
-  .side-list{
-    margin-top:.5rem;
-  }
+  .original-card .info-label{ color:#94a3b8; }
+  .original-card .info-value{ color:#475569; }
+  .side-list{ margin-top:.5rem; }
   .side-list-item{
     padding:.55rem .6rem;
     border-radius:.65rem;
@@ -126,7 +95,6 @@
     color:#6b7280;
     margin-top:.1rem;
   }
-  /* Botones de acción del header */
   .btn-action{
     border-radius:999px;
     padding:.35rem 1rem;
@@ -135,7 +103,6 @@
     align-items:center;
     gap:.35rem;
   }
-  /* Warning box (anulación) */
   .warning-box{
     background:#fef3c7;
     border:1px solid #fcd34d;
@@ -148,22 +115,41 @@
     gap:.5rem;
     margin-bottom:.75rem;
   }
-  .warning-box i{
-    font-size:1rem;
-    flex-shrink:0;
+  .warning-box i{ font-size:1rem; flex-shrink:0; }
+  .success-box{
+    background:#dcfce7;
+    border:1px solid #86efac;
+    border-radius:10px;
+    padding:.65rem .85rem;
+    color:#166534;
+    font-size:.8rem;
+    display:flex;
+    align-items:center;
+    gap:.5rem;
+    margin-bottom:.75rem;
+  }
+  .success-box i{ font-size:1rem; flex-shrink:0; }
+  .terminal-banner{
+    background:#f1f5f9;
+    border:1px solid #e2e8f0;
+    border-radius:10px;
+    padding:.6rem .85rem;
+    color:#64748b;
+    font-size:.8rem;
+    display:flex;
+    align-items:center;
+    gap:.5rem;
+    margin-bottom:.75rem;
   }
 
   @media (max-width:992px){
-    .detail-layout{
-      grid-template-columns:minmax(0,1fr);
-    }
+    .detail-layout{ grid-template-columns:minmax(0,1fr); }
   }
 </style>
 {% endblock %}
 
 {% block content %}
 
-<!-- Mensajes de Django -->
 {% if messages %}
   {% for msg in messages %}
     <div class="alert alert-{{ msg.tags|default:'info' }} alert-dismissible fade show py-2 mb-3" role="alert">
@@ -199,13 +185,17 @@
   <div class="d-flex align-items-center gap-2">
     <!-- Pill de estado -->
     {% if evento.estado == 'CON' %}
-      <span class="pill-estado pill-estado-activo">Confirmado</span>
-    {% else %}
-      <span class="pill-estado pill-estado-inactivo">Anulado</span>
+      <span class="pill-estado pill-confirmado">Confirmado</span>
+    {% elif evento.estado == 'APL' %}
+      <span class="pill-estado pill-aplazado">Aplazado</span>
+    {% elif evento.estado == 'REA' %}
+      <span class="pill-estado pill-realizado">Realizado</span>
+    {% elif evento.estado == 'CAN' %}
+      <span class="pill-estado pill-cancelado">Cancelado</span>
     {% endif %}
 
-    <!-- Acciones solo si CONFIRMADO -->
-    {% if evento.estado == 'CON' %}
+    <!-- Acciones solo si el evento es mutable -->
+    {% if puede_modificarse %}
       <a href="{% url 'eventos:correccion' evento.pk %}"
          class="btn btn-outline-dark btn-action"
          title="Registrar corrección">
@@ -213,16 +203,32 @@
         Corregir
       </a>
       <button type="button"
+              class="btn btn-success btn-action"
+              data-bs-toggle="modal"
+              data-bs-target="#modalRealizar"
+              title="Marcar como realizado">
+        <i class="bi bi-check-circle"></i>
+        Realizado
+      </button>
+      <button type="button"
               class="btn btn-outline-danger btn-action"
               data-bs-toggle="modal"
-              data-bs-target="#modalAnular"
-              title="Anular evento">
+              data-bs-target="#modalCancelar"
+              title="Cancelar evento">
         <i class="bi bi-x-circle"></i>
-        Anular
+        Cancelar
       </button>
     {% endif %}
   </div>
 </div>
+
+<!-- Banner para estados terminales -->
+{% if not puede_modificarse %}
+  <div class="terminal-banner">
+    <i class="bi bi-lock-fill"></i>
+    Este evento está en estado <strong>&nbsp;{{ evento.get_estado_display }}&nbsp;</strong> y no puede modificarse.
+  </div>
+{% endif %}
 
 <!-- Layout principal -->
 <div class="detail-layout">
@@ -230,7 +236,6 @@
   <!-- ── COLUMNA IZQUIERDA ── -->
   <div>
 
-    <!-- Información del evento -->
     <div class="card-soft">
       <div class="section-title">Información del evento</div>
       <div class="section-body info-grid">
@@ -281,7 +286,6 @@
       </div>
     </div>
 
-    <!-- Evento original (solo si es corrección) -->
     {% if evento.es_correccion %}
     <div class="card-soft">
       <div class="section-title">Evento original que se corrige</div>
@@ -311,7 +315,6 @@
     </div>
     {% endif %}
 
-    <!-- Observaciones -->
     <div class="card-soft">
       <div class="section-title">Observaciones</div>
       <div class="section-body">
@@ -328,7 +331,6 @@
   <!-- ── COLUMNA DERECHA ── -->
   <div>
 
-    <!-- Correcciones registradas -->
     <div class="card-soft">
       <div class="section-title d-flex align-items-center justify-content-between">
         <span>Correcciones registradas</span>
@@ -352,8 +354,12 @@
                 <span>
                   {% if c.estado == 'CON' %}
                     <span style="display:inline-flex;align-items:center;border-radius:999px;padding:.08rem .5rem;font-size:.68rem;font-weight:500;background:#020617;color:#f9fafb;">Confirmado</span>
-                  {% else %}
-                    <span style="display:inline-flex;align-items:center;border-radius:999px;padding:.08rem .5rem;font-size:.68rem;font-weight:500;background:#e5e7eb;color:#4b5563;">Anulado</span>
+                  {% elif c.estado == 'APL' %}
+                    <span style="display:inline-flex;align-items:center;border-radius:999px;padding:.08rem .5rem;font-size:.68rem;font-weight:500;background:#fef3c7;color:#92400e;">Aplazado</span>
+                  {% elif c.estado == 'REA' %}
+                    <span style="display:inline-flex;align-items:center;border-radius:999px;padding:.08rem .5rem;font-size:.68rem;font-weight:500;background:#dcfce7;color:#166534;">Realizado</span>
+                  {% elif c.estado == 'CAN' %}
+                    <span style="display:inline-flex;align-items:center;border-radius:999px;padding:.08rem .5rem;font-size:.68rem;font-weight:500;background:#e5e7eb;color:#4b5563;">Cancelado</span>
                   {% endif %}
                 </span>
               </div>
@@ -368,7 +374,6 @@
       </div>
     </div>
 
-    <!-- Ficha del animal -->
     <div class="card-soft">
       <div class="section-title">Animal</div>
       <div class="section-body info-grid" style="margin-bottom:.6rem;">
@@ -398,42 +403,83 @@
   </div>
 </div>
 
-<!-- ── Modal de anulación ── -->
-{% if evento.estado == 'CON' %}
-<div class="modal fade" id="modalAnular" tabindex="-1" aria-labelledby="modalAnularLabel" aria-hidden="true">
+<!-- ── Modal: Marcar como Realizado ── -->
+{% if puede_modificarse %}
+<div class="modal fade" id="modalRealizar" tabindex="-1" aria-labelledby="modalRealizarLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content" style="border-radius:16px;border:1px solid #e5e7eb;">
-      <form method="post" action="{% url 'eventos:anular' evento.pk %}" novalidate>
+      <form method="post" action="{% url 'eventos:realizar' evento.pk %}" novalidate>
         {% csrf_token %}
         <div class="modal-header" style="border-bottom:1px solid #f1f5f9;padding:1rem 1.25rem .75rem;">
-          <h6 class="modal-title" id="modalAnularLabel" style="font-size:.95rem;font-weight:600;">
-            Anular evento
+          <h6 class="modal-title" id="modalRealizarLabel" style="font-size:.95rem;font-weight:600;">
+            Marcar como Realizado
+          </h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body" style="padding:1rem 1.25rem;">
+          <div class="success-box">
+            <i class="bi bi-check-circle-fill"></i>
+            El evento quedará marcado como <strong>&nbsp;REALIZADO</strong>. No podrá modificarse después.
+          </div>
+          <label class="field-label" style="font-size:.8rem;font-weight:500;margin-bottom:.3rem;display:block;">
+            Notas de cierre <span style="color:#6b7280;font-weight:400;">(opcional)</span>
+          </label>
+          <textarea
+            name="notas_cierre"
+            class="form-control"
+            rows="3"
+            placeholder="Observaciones al cerrar el evento (ej: aplicado sin incidentes)..."
+            style="font-size:.82rem;resize:vertical;"
+          ></textarea>
+        </div>
+        <div class="modal-footer" style="border-top:1px solid #f1f5f9;padding:.75rem 1.25rem;">
+          <button type="button" class="btn btn-light" style="border-radius:999px;font-size:.84rem;" data-bs-dismiss="modal">
+            Volver
+          </button>
+          <button type="submit" class="btn btn-success" style="border-radius:999px;font-size:.84rem;">
+            <i class="bi bi-check-circle me-1"></i>Confirmar realización
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal: Cancelar evento ── -->
+<div class="modal fade" id="modalCancelar" tabindex="-1" aria-labelledby="modalCancelarLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:16px;border:1px solid #e5e7eb;">
+      <form method="post" action="{% url 'eventos:cancelar' evento.pk %}" novalidate>
+        {% csrf_token %}
+        <div class="modal-header" style="border-bottom:1px solid #f1f5f9;padding:1rem 1.25rem .75rem;">
+          <h6 class="modal-title" id="modalCancelarLabel" style="font-size:.95rem;font-weight:600;">
+            Cancelar evento
           </h6>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
         <div class="modal-body" style="padding:1rem 1.25rem;">
           <div class="warning-box">
             <i class="bi bi-exclamation-triangle-fill"></i>
-            Esta acción marcará el evento como <strong>&nbsp;ANULADO</strong>. No se puede deshacer.
+            Esta acción marcará el evento como <strong>&nbsp;CANCELADO</strong>. No se puede deshacer.
           </div>
           <label class="field-label" style="font-size:.8rem;font-weight:500;margin-bottom:.3rem;display:block;">
-            Motivo de anulación <span style="color:#ef4444;">*</span>
+            Motivo de cancelación <span style="color:#ef4444;">*</span>
           </label>
           <textarea
             name="motivo"
             class="form-control"
             rows="3"
             required
-            placeholder="Describe el motivo por el que se anula este evento..."
+            placeholder="Describe el motivo por el que se cancela este evento..."
             style="font-size:.82rem;resize:vertical;"
           ></textarea>
         </div>
         <div class="modal-footer" style="border-top:1px solid #f1f5f9;padding:.75rem 1.25rem;">
           <button type="button" class="btn btn-light" style="border-radius:999px;font-size:.84rem;" data-bs-dismiss="modal">
-            Cancelar
+            Volver
           </button>
           <button type="submit" class="btn btn-danger" style="border-radius:999px;font-size:.84rem;">
-            <i class="bi bi-x-circle me-1"></i>Confirmar anulación
+            <i class="bi bi-x-circle me-1"></i>Confirmar cancelación
           </button>
         </div>
       </form>

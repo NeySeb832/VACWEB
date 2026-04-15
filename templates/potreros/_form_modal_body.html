@@ -1,0 +1,55 @@
+{% comment %}Partial: cuerpo del formulario de creación/edición de Potrero (para carga AJAX en modal).{% endcomment %}
+<form id="potrero-form" novalidate>
+  {% csrf_token %}
+  <div class="mb-3">
+    <label class="form-label fw-semibold" for="{{ form.nombre_codigo.id_for_label }}">
+      {{ form.nombre_codigo.label }} <span class="text-danger">*</span>
+    </label>
+    {{ form.nombre_codigo }}
+    {% if form.nombre_codigo.errors %}
+      <div class="invalid-feedback d-block">{{ form.nombre_codigo.errors.0 }}</div>
+    {% endif %}
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-6">
+      <label class="form-label fw-semibold" for="{{ form.capacidad_maxima.id_for_label }}">
+        {{ form.capacidad_maxima.label }} <span class="text-danger">*</span>
+      </label>
+      {{ form.capacidad_maxima }}
+      {% if form.capacidad_maxima.errors %}
+        <div class="invalid-feedback d-block">{{ form.capacidad_maxima.errors.0 }}</div>
+      {% endif %}
+    </div>
+    <div class="col-6">
+      <label class="form-label fw-semibold" for="{{ form.area_ha.id_for_label }}">
+        {{ form.area_ha.label }} <span class="text-danger">*</span>
+      </label>
+      {{ form.area_ha }}
+      {% if form.area_ha.errors %}
+        <div class="invalid-feedback d-block">{{ form.area_ha.errors.0 }}</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label fw-semibold" for="{{ form.tipo_uso.id_for_label }}">
+      {{ form.tipo_uso.label }} <span class="text-danger">*</span>
+    </label>
+    {{ form.tipo_uso }}
+    {% if form.tipo_uso.errors %}
+      <div class="invalid-feedback d-block">{{ form.tipo_uso.errors.0 }}</div>
+    {% endif %}
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label fw-semibold" for="{{ form.observaciones.id_for_label }}">
+      {{ form.observaciones.label }}
+    </label>
+    {{ form.observaciones }}
+  </div>
+
+  {% if not is_create %}
+    <input type="hidden" name="_method" value="PUT">
+  {% endif %}
+</form>

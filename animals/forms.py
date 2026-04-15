@@ -18,7 +18,6 @@ class AnimalForm(forms.ModelForm):
             "sexo",
             "etapa",
             "raza",
-            "fecha_nacimiento",
             "potrero",
             "estado",
             "motivo_baja",
@@ -53,12 +52,6 @@ class AnimalForm(forms.ModelForm):
                     "placeholder": "Ej. Brahman, Normando...",
                 }
             ),
-            "fecha_nacimiento": forms.DateInput(
-                attrs={
-                    "class": "form-control",
-                    "type": "date",
-                }
-            ),
             "potrero": forms.Select(
                 attrs={
                     "class": "form-select",
@@ -90,15 +83,14 @@ class AnimalForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         # Potreros activos por defecto (RN-4), manteniendo el actual aunque esté inactivo
-        qs = Potrero.objects.filter(activo=True)
+        qs = Potrero.objects.filter(estado="ACTIVO")
         if self.instance.pk and self.instance.potrero_id and self.instance.potrero not in qs:
             qs = Potrero.objects.filter(pk=self.instance.potrero_id) | qs
 
-        self.fields["potrero"].queryset = qs.order_by("nombre")
+        self.fields["potrero"].queryset = qs.order_by("nombre_codigo")
         self.fields["potrero"].empty_label = "Seleccione un potrero"
 
         # Etiquetas más amigables
         self.fields["rfid"].label = "RFID"
         self.fields["arete"].label = "Nombre/Alias o Nº de arete"
-        self.fields["fecha_nacimiento"].label = "Fecha de nacimiento"
         self.fields["motivo_baja"].label = "Motivo de baja"

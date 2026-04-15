@@ -19,6 +19,7 @@ INSTALLED_APPS = [
     "animals",  # app del CU-002
     "eventos",  # app del CU-003
     "pesajes",  # app del CU-004
+    "potreros", # app del CU-005
 ]
 
 MIDDLEWARE = [

@@ -44,7 +44,14 @@ def grant_perm(user: User, perm_code: str) -> None:
 
 
 def make_potrero(nombre: str = "P1", activo: bool = True) -> Potrero:
-    return Potrero.objects.create(nombre=nombre, activo=activo)
+    estado = "ACTIVO" if activo else "INACTIVO"
+    return Potrero.objects.create(
+        nombre_codigo=nombre,
+        estado=estado,
+        area_ha="10.00",
+        capacidad_maxima=50,
+        tipo_uso="CEBA",
+    )
 
 
 def make_animal_activo(potrero: Potrero, rfid: str = "COL-1234567890", arete: str = "A-001") -> Animal:

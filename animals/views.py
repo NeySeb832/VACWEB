@@ -8,11 +8,13 @@ from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Q, Count
 from django.shortcuts import render, redirect, get_object_or_404
+from django.views.decorators.http import require_POST
 
 from authz.decorators import require_perm
 from .models import Animal, Potrero, Movimiento
 from .forms import AnimalForm
 from pesajes.models import Pesaje
+from potreros.models import Potrero as PotreroModel
 
 
 @login_required
@@ -68,7 +70,7 @@ def animal_list(request):
         "estado": estado,
         "lote": lote,
         "estados_choices": Animal.Estado.choices,
-        "lotes": Potrero.objects.filter(activo=True).order_by("nombre"),
+        "lotes": Potrero.objects.filter(estado="ACTIVO").order_by("nombre_codigo"),
     }
     return render(request, "animals/animal_list.html", ctx)
 
@@ -122,6 +124,7 @@ def animal_detail(request, pk: int):
         "pesaje_inicial": pesaje_inicial,
         "pesaje_actual": pesaje_actual,
         "num_pesajes": num_pesajes,
+        "potreros_activos": PotreroModel.objects.filter(estado="ACTIVO").order_by("nombre_codigo"),
     }
     return render(request, "animals/animal_detail.html", ctx)
 
@@ -176,3 +179,23 @@ def animal_baja(request, pk: int):
         "animal": animal,
     }
     return render(request, "animals/animal_baja_confirm.html", ctx)
+
+
+@login_required
+@require_perm("animals.write")
+@require_POST
+def animal_assign_potrero(request, pk: int):
+    """Cambia únicamente el potrero asignado a un animal (POST)."""
+    animal = get_object_or_404(Animal, pk=pk)
+    potrero_id = request.POST.get("potrero_id", "").strip()
+
+    if potrero_id:
+        potrero = get_object_or_404(PotreroModel, pk=potrero_id, estado="ACTIVO")
+        animal.potrero = potrero
+    else:
+        animal.potrero = None
+
+    animal.last_modified_by = request.user
+    animal.save(update_fields=["potrero", "last_modified_by", "updated_at"])
+    messages.success(request, "Potrero actualizado correctamente.")
+    return redirect("animals:detail", pk=animal.pk)

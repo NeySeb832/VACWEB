@@ -1,0 +1,371 @@
+{% extends "base/menu_base.html" %}
+{% load static %}
+
+{% block title %}Potrero {{ potrero.nombre_codigo }} · Control Ganadero{% endblock %}
+
+{% block extra_head %}
+<style>
+  .back-link{
+    display:inline-flex;align-items:center;gap:.4rem;
+    font-size:.82rem;color:#6b7280;text-decoration:none;margin-bottom:.75rem;
+  }
+  .back-link:hover{color:#111827;}
+
+  .detail-card{
+    background:#fff;border-radius:14px;border:1px solid #e5e7eb;
+    padding:1.25rem 1.5rem;margin-bottom:1rem;
+  }
+  .detail-header{
+    display:flex;justify-content:space-between;align-items:flex-start;
+    margin-bottom:1rem;
+  }
+  .detail-nombre{font-size:1.15rem;font-weight:700;}
+
+  .pill{
+    display:inline-flex;align-items:center;border-radius:999px;
+    padding:.12rem .65rem;font-size:.72rem;font-weight:500;
+  }
+  .pill-activo{background:#bbf7d0;color:#166534;}
+  .pill-inactivo{background:#e5e7eb;color:#4b5563;}
+  .pill-tipo{background:#e0e7ff;color:#3730a3;margin-left:.35rem;}
+
+  .meta-grid{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-bottom:.75rem;
+  }
+  .meta-item{display:flex;flex-direction:column;gap:.1rem;}
+  .meta-lbl{font-size:.72rem;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;}
+  .meta-val{font-size:.9rem;font-weight:500;color:#111827;}
+
+  /* barra de ocupación */
+  .progress{height:10px;border-radius:999px;background:#e5e7eb;margin:.5rem 0;}
+  .progress-bar-green{background:#22c55e;}
+  .progress-bar-orange{background:#f97316;}
+  .progress-bar-red{background:#ef4444;}
+
+  .ocu-row{display:flex;justify-content:space-between;font-size:.82rem;color:#6b7280;}
+
+  /* tabla animales */
+  .table thead th{
+    font-size:.73rem;text-transform:uppercase;letter-spacing:.06em;
+    color:#9ca3af;border-bottom:1px solid #e5e7eb;
+    padding-top:.5rem;padding-bottom:.4rem;
+  }
+  .table tbody td{
+    font-size:.84rem;vertical-align:middle;
+    padding-top:.5rem;padding-bottom:.5rem;border-bottom:1px solid #f1f5f9;
+  }
+
+  .btn-action{
+    border-radius:999px;font-size:.82rem;padding:.3rem 1rem;
+    display:inline-flex;align-items:center;gap:.35rem;
+  }
+
+  @media(max-width:768px){
+    .meta-grid{grid-template-columns:repeat(2,1fr);}
+    .detail-header{flex-direction:column;gap:.5rem;}
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<a href="{% url 'potreros:list' %}" class="back-link">
+  <i class="bi bi-arrow-left"></i> Volver al listado
+</a>
+
+<!-- ============================================================
+     DATOS GENERALES
+============================================================ -->
+<div class="detail-card">
+  <div class="detail-header">
+    <div>
+      <div class="detail-nombre">{{ potrero.nombre_codigo }}</div>
+      <div style="margin-top:.35rem;">
+        <span class="pill {% if potrero.estado == 'ACTIVO' %}pill-activo{% else %}pill-inactivo{% endif %}">
+          {{ potrero.get_estado_display }}
+        </span>
+        <span class="pill pill-tipo">{{ potrero.get_tipo_uso_display }}</span>
+      </div>
+    </div>
+    {% if puede_escribir and potrero.estado == 'ACTIVO' %}
+    <div class="d-flex gap-2">
+      <button class="btn btn-sm btn-outline-secondary btn-action btn-editar" data-pk="{{ potrero.pk }}">
+        <i class="bi bi-pencil"></i> Editar
+      </button>
+      <button
+        class="btn btn-sm btn-outline-danger btn-action btn-desactivar"
+        data-pk="{{ potrero.pk }}"
+        data-nombre="{{ potrero.nombre_codigo|escapejs }}">
+        <i class="bi bi-trash3"></i> Desactivar
+      </button>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="meta-grid">
+    <div class="meta-item">
+      <span class="meta-lbl">Área</span>
+      <span class="meta-val">{{ potrero.area_ha }} ha</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-lbl">Capacidad máxima</span>
+      <span class="meta-val">{{ potrero.capacidad_maxima }} animales</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-lbl">Animales activos</span>
+      <span class="meta-val">{{ activos_count }}</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-lbl">Espacios disponibles</span>
+      <span class="meta-val">{{ disponibles }}</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-lbl">Creado el</span>
+      <span class="meta-val">{{ potrero.created_at|date:"d/m/Y" }}</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-lbl">Última modificación</span>
+      <span class="meta-val">{{ potrero.updated_at|date:"d/m/Y H:i" }}</span>
+    </div>
+  </div>
+
+  {% if potrero.observaciones %}
+  <div style="font-size:.85rem;color:#374151;background:#f9fafb;border-radius:8px;padding:.65rem .85rem;margin-top:.25rem;">
+    <span style="font-weight:600;font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:#9ca3af;">Observaciones</span>
+    <p class="mb-0 mt-1">{{ potrero.observaciones }}</p>
+  </div>
+  {% endif %}
+
+  <!-- Barra de ocupación -->
+  <div style="margin-top:1rem;">
+    <div class="ocu-row">
+      <span>Ocupación del potrero</span>
+      <span><strong>{{ porcentaje }}%</strong> ({{ activos_count }} / {{ potrero.capacidad_maxima }})</span>
+    </div>
+    <div class="progress">
+      <div
+        class="progress-bar {% if porcentaje >= 100 %}progress-bar-red{% elif porcentaje >= 75 %}progress-bar-orange{% else %}progress-bar-green{% endif %}"
+        role="progressbar"
+        style="width:{{ porcentaje|floatformat:0 }}%"
+        aria-valuenow="{{ porcentaje }}"
+        aria-valuemin="0"
+        aria-valuemax="100">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     ANIMALES ACTIVOS ASIGNADOS
+============================================================ -->
+<div class="detail-card">
+  <h6 style="font-size:.9rem;font-weight:600;margin-bottom:.75rem;">
+    <i class="bi bi-cow me-1 text-muted"></i>
+    Animales activos asignados ({{ activos_count }})
+  </h6>
+
+  {% if animales %}
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>RFID</th>
+          <th>Nombre / Alias</th>
+          <th>Raza</th>
+          <th>Etapa</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in animales %}
+        <tr>
+          <td>{{ a.rfid|default:"—" }}</td>
+          <td>{{ a.arete|default:"—" }}</td>
+          <td>{{ a.raza|default:"—" }}</td>
+          <td>{{ a.get_etapa_display|default:"—" }}</td>
+          <td class="text-end">
+            <a href="{% url 'animals:detail' a.pk %}" class="text-muted" title="Ver animal">
+              <i class="bi bi-eye"></i>
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="text-muted mb-0" style="font-size:.85rem;">Este potrero no tiene animales activos asignados.</p>
+  {% endif %}
+</div>
+
+<!-- ============================================================
+     MODALES (reutiliza el mismo patrón del listado)
+============================================================ -->
+<!-- Modal Editar -->
+<div class="modal fade" id="modalPotrero" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title mb-0">Editar Potrero</h5>
+          <small class="text-muted">Modifica los datos del potrero seleccionado.</small>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="modalPotreroBody">
+        <div class="text-center py-4">
+          <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-sm" id="btnSubmitPotrero"
+                style="background:#020617;color:#f9fafb;border-radius:999px;padding:.3rem 1.2rem;">
+          Guardar Cambios
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Confirmar Desactivar -->
+<div class="modal fade" id="modalDesactivar" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title">Confirmar desactivación</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" style="font-size:.88rem;">
+        ¿Está seguro de que desea desactivar este potrero?
+        Esta acción no puede revertirse sin contactar al Administrador.
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-sm btn-danger" id="btnConfirmarDesactivar"
+                style="border-radius:999px;">
+          Confirmar desactivación
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Bloqueo -->
+<div class="modal fade" id="modalBloqueo" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-danger-subtle">
+        <h6 class="modal-title text-danger">
+          <i class="bi bi-exclamation-triangle me-1"></i> No se puede desactivar
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p id="bloqueoMsg" style="font-size:.88rem;"></p>
+        <div id="bloqueoAnimales"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <a href="{% url 'animals:list' %}" class="btn btn-sm"
+           style="background:#020617;color:#f9fafb;border-radius:999px;padding:.3rem 1.2rem;">
+          Ir al módulo de Animales
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  'use strict';
+  const CSRF = document.cookie.match(/csrftoken=([^;]+)/)?.[1] ?? '';
+  const modalPotrero    = new bootstrap.Modal(document.getElementById('modalPotrero'));
+  const modalDesactivar = new bootstrap.Modal(document.getElementById('modalDesactivar'));
+  const modalBloqueo    = new bootstrap.Modal(document.getElementById('modalBloqueo'));
+
+  /* ---- Editar ---- */
+  const btnEditar = document.querySelector('.btn-editar');
+  if (btnEditar) {
+    btnEditar.addEventListener('click', function () {
+      const pk = this.dataset.pk;
+      document.getElementById('modalPotreroBody').innerHTML =
+        '<div class="text-center py-4"><div class="spinner-border spinner-border-sm text-secondary"></div></div>';
+      modalPotrero.show();
+      fetch(`/potreros/${pk}/editar/`, { headers: {'X-Requested-With': 'XMLHttpRequest'} })
+        .then(r => r.json())
+        .then(d => { document.getElementById('modalPotreroBody').innerHTML = d.html; });
+    });
+  }
+
+  document.getElementById('btnSubmitPotrero').addEventListener('click', function () {
+    const pk   = '{{ potrero.pk }}';
+    const form = document.getElementById('potrero-form');
+    if (!form) return;
+    const fd = new FormData(form);
+    this.disabled = true;
+    fetch(`/potreros/${pk}/editar/`, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': CSRF, 'X-Requested-With': 'XMLHttpRequest' },
+      body: fd,
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        if (data.warning) alert('Advertencia: ' + data.warning);
+        location.reload();
+      } else {
+        const errors = data.errors || {};
+        for (const [campo, msgs] of Object.entries(errors)) {
+          const el = document.querySelector(`[name="${campo}"]`);
+          if (el) {
+            el.classList.add('is-invalid');
+            const fb = document.createElement('div');
+            fb.className = 'invalid-feedback d-block';
+            fb.textContent = Array.isArray(msgs) ? msgs[0] : msgs;
+            el.parentNode.appendChild(fb);
+          }
+        }
+      }
+    })
+    .finally(() => { this.disabled = false; });
+  });
+
+  /* ---- Desactivar ---- */
+  const btnDesactivar = document.querySelector('.btn-desactivar');
+  if (btnDesactivar) {
+    btnDesactivar.addEventListener('click', function () {
+      modalDesactivar.show();
+    });
+  }
+
+  document.getElementById('btnConfirmarDesactivar').addEventListener('click', function () {
+    const pk = '{{ potrero.pk }}';
+    this.disabled = true;
+    fetch(`/potreros/${pk}/desactivar/`, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': CSRF, 'X-Requested-With': 'XMLHttpRequest' },
+    })
+    .then(r => r.json())
+    .then(data => {
+      modalDesactivar.hide();
+      if (data.success) {
+        window.location.href = "{% url 'potreros:list' %}";
+      } else if (data.blocked) {
+        document.getElementById('bloqueoMsg').textContent = data.message;
+        const lista = (data.animales || []).map(a => `<li>${a.rfid} — ${a.nombre_alias}</li>`).join('');
+        document.getElementById('bloqueoAnimales').innerHTML =
+          lista ? `<ul class="mb-0" style="font-size:.83rem;">${lista}</ul>` : '';
+        modalBloqueo.show();
+      } else {
+        alert(data.message || 'Error al desactivar.');
+      }
+    })
+    .finally(() => { this.disabled = false; });
+  });
+})();
+</script>
+{% endblock %}

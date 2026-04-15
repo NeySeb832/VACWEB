@@ -329,7 +329,7 @@
           <span>Dashboard</span>
         </a>
         <a class="nav-link {% if request.resolver_match.app_name == 'animals' %}active{% endif %}" href="{% url 'animals:list' %}">
-          <i class="bi bi-cow"></i>
+          <i class="bi bi-tag"></i>
           <span>Animales</span>
         </a>
         <a class="nav-link {% if request.resolver_match.app_name == 'eventos' %}active{% endif %}" href="{% url 'eventos:list' %}">
@@ -346,21 +346,9 @@
         </a>
 
         <div class="nav-section-label">Administración</div>
-        <a class="nav-link" href="#">
-          <i class="bi bi-people"></i>
-          <span>Usuarios</span>
-        </a>
-        <a class="nav-link" href="#">
-          <i class="bi bi-house-door"></i>
-          <span>Fincas</span>
-        </a>
-        <a class="nav-link" href="#">
+        <a class="nav-link {% if request.resolver_match.app_name == 'potreros' %}active{% endif %}" href="{% url 'potreros:list' %}">
           <i class="bi bi-grid-3x3-gap"></i>
           <span>Lotes / Potreros</span>
-        </a>
-        <a class="nav-link" href="#">
-          <i class="bi bi-arrow-repeat"></i>
-          <span>Sincronización</span>
         </a>
         <a class="nav-link" href="#">
           <i class="bi bi-question-circle"></i>

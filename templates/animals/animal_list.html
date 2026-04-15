@@ -239,7 +239,18 @@
                 {# aproximación: tiempo desde creación; luego se puede ajustar a fecha_entrada #}
                 {{ animal.created_at|timesince }}
               </td>
-              <td>{{ animal.potrero|default:"—" }}</td>
+              <td>
+                {% if animal.potrero %}
+                  <a href="{% url 'potreros:detail' animal.potrero.pk %}"
+                     style="display:inline-flex;align-items:center;gap:.3rem;border-radius:999px;padding:.1rem .6rem;font-size:.75rem;font-weight:500;background:#e0e7ff;color:#3730a3;text-decoration:none;"
+                     title="Ver potrero">
+                    <i class="bi bi-grid-3x3-gap" style="font-size:.7rem;"></i>
+                    {{ animal.potrero.nombre_codigo }}
+                  </a>
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </td>
               <td>
                 {% if animal.ultimo_peso %}
                   {{ animal.ultimo_peso }} kg

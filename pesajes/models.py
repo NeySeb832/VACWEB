@@ -1,6 +1,6 @@
 # pesajes/models.py
 from decimal import Decimal
-
+from datetime import date as _date
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -76,7 +76,7 @@ class Pesaje(models.Model):
                 if animal.estado != Animal.Estado.ACTIVO:
                     errors["animal"] = "Solo se pueden registrar pesajes en animales con estado Activo."
         # Fecha no futura
-        if self.fecha and self.fecha > timezone.now().date():
+        if self.fecha and self.fecha > _date.today():
             errors["fecha"] = "La fecha del pesaje no puede ser posterior a hoy."
         if errors:
             raise ValidationError(errors)

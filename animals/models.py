@@ -3,13 +3,8 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 
-class Potrero(models.Model):
-    """Potrero/Lote para movimientos. RN-4: solo destinos activos."""
-    nombre = models.CharField(max_length=64, unique=True)
-    activo = models.BooleanField(default=True)
-
-    def __str__(self) -> str:
-        return self.nombre
+# CU-005: Potrero gestionado en su propia app
+from potreros.models import Potrero  # noqa: F401  (re-export para compatibilidad)
 
 
 class Animal(models.Model):
@@ -38,7 +33,7 @@ class Animal(models.Model):
     etapa = models.CharField(max_length=3, choices=Etapa.choices, blank=True, null=True)
     raza = models.CharField(max_length=48, blank=True, null=True)
     fecha_nacimiento = models.DateField(blank=True, null=True)
-    potrero = models.ForeignKey(Potrero, on_delete=models.PROTECT, related_name="animales", blank=True, null=True)
+    potrero = models.ForeignKey("potreros.Potrero", on_delete=models.PROTECT, related_name="animales", blank=True, null=True)
 
     estado = models.CharField(max_length=3, choices=Estado.choices, default=Estado.BORRADOR)
     motivo_baja = models.CharField(max_length=64, blank=True, null=True)
@@ -109,13 +104,13 @@ class Animal(models.Model):
 class Movimiento(models.Model):
     """RN-4: Movimiento entre potreros válidos y activos."""
     animal = models.ForeignKey(Animal, on_delete=models.CASCADE, related_name="movimientos")
-    desde = models.ForeignKey(Potrero, on_delete=models.PROTECT, related_name="+", blank=True, null=True)
-    hacia = models.ForeignKey(Potrero, on_delete=models.PROTECT, related_name="+")
+    desde = models.ForeignKey("potreros.Potrero", on_delete=models.PROTECT, related_name="+", blank=True, null=True)
+    hacia = models.ForeignKey("potreros.Potrero", on_delete=models.PROTECT, related_name="+")
     fecha = models.DateField(default=timezone.now)
     responsable = models.CharField(max_length=64)
 
     def clean(self):
-        if self.hacia and not self.hacia.activo:
+        if self.hacia and self.hacia.estado != "ACTIVO":
             raise ValidationError("El potrero destino no está activo.")
         if self.desde_id and self.desde_id == self.hacia_id:
             raise ValidationError("El potrero de destino debe ser diferente al origen.")
