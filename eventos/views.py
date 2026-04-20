@@ -3,15 +3,18 @@
 Registro, detalle, corrección, cancelación y realización de vacunas/tratamientos.
 """
 
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import render, redirect, get_object_or_404
 
 from animals.models import Animal
 from authz.decorators import require_perm
+from potreros.models import Potrero
 from .models import EventoSanitario
-from .forms import EventoSanitarioForm, CorreccionEventoForm
+from .forms import EventoSanitarioForm, CorreccionEventoForm, EventoMasivoForm
 
 
 @login_required
@@ -206,3 +209,75 @@ def evento_realizar(request, pk: int):
     evento.save(update_fields=["estado", "notas"])
 
     return redirect("eventos:detail", pk=pk)
+
+
+@login_required
+@require_perm("eventos.write")
+def evento_masivo_create(request):
+    """CU-003 pasos 13-14: Registro masivo de un evento sanitario para varios animales.
+
+    GET  → muestra el formulario; ?potrero=<id> filtra la lista de animales.
+    POST → valida y crea un EventoSanitario por cada animal seleccionado,
+           dentro de una transacción atómica.
+    """
+    # Potrero de filtro (opcional)
+    potrero_id  = request.GET.get("potrero", "").strip()
+    potrero_obj = None
+    if potrero_id:
+        try:
+            potrero_obj = Potrero.objects.get(pk=potrero_id, estado="ACTIVO")
+        except Potrero.DoesNotExist:
+            potrero_obj = None
+
+    if request.method == "POST":
+        # En POST, el potrero puede venir como campo oculto del formulario
+        post_potrero_id = request.POST.get("potrero_id", "").strip()
+        if post_potrero_id and not potrero_obj:
+            try:
+                potrero_obj = Potrero.objects.get(pk=post_potrero_id, estado="ACTIVO")
+            except Potrero.DoesNotExist:
+                pass
+
+        form = EventoMasivoForm(request.POST, potrero=potrero_obj)
+        if form.is_valid():
+            animales = form.cleaned_data["animales"]
+            datos_evento = {
+                k: form.cleaned_data[k]
+                for k in ["tipo", "fecha", "responsable", "producto",
+                          "dosis", "lote", "via_aplicacion", "notas"]
+            }
+            creados = 0
+            errores = []
+            try:
+                with transaction.atomic():
+                    for animal in animales:
+                        evento = EventoSanitario(
+                            animal=animal,
+                            estado=EventoSanitario.Estado.CONFIRMADO,
+                            created_by=request.user,
+                            **datos_evento,
+                        )
+                        evento.full_clean()
+                        evento.save()
+                        creados += 1
+            except Exception as exc:
+                errores.append(str(exc))
+
+            if errores:
+                messages.error(request, f"Error al crear eventos: {errores[0]}")
+            else:
+                messages.success(
+                    request,
+                    f"Se registraron {creados} evento{'s' if creados != 1 else ''} sanitario{'s' if creados != 1 else ''} correctamente."
+                )
+                return redirect("eventos:list")
+    else:
+        form = EventoMasivoForm(potrero=potrero_obj)
+
+    ctx = {
+        "form":       form,
+        "potrero_obj": potrero_obj,
+        "potreros":   Potrero.objects.filter(estado="ACTIVO").order_by("nombre_codigo"),
+        "potrero_id": potrero_id,
+    }
+    return render(request, "eventos/evento_masivo.html", ctx)

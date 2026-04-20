@@ -1,0 +1,217 @@
+{% extends "base/menu_base.html" %}
+{% block title %}Evento masivo · Control Ganadero{% endblock %}
+
+{% block extra_head %}
+<style>
+  .sheet-wrapper { display:flex; justify-content:center; align-items:flex-start; }
+  .sheet         { margin-top:1.5rem; width:100%; max-width:760px; background:#fff;
+                   border-radius:18px; box-shadow:0 18px 50px rgba(15,23,42,.08);
+                   border:1px solid #e5e7eb; padding:1.5rem 1.75rem 1.75rem; }
+  .sheet-title   { font-size:1.15rem; font-weight:600; }
+  .sheet-sub     { font-size:.82rem; color:#6b7280; }
+  .field-label   { font-size:.78rem; font-weight:500; display:block; margin-bottom:.12rem; }
+  .required      { color:#ef4444; }
+  .field-help    { font-size:.72rem; color:#9ca3af; margin-top:.15rem; }
+  .section-label { font-size:.72rem; text-transform:uppercase; letter-spacing:.06em;
+                   color:#9ca3af; margin:1.1rem 0 .6rem; padding-bottom:.3rem;
+                   border-bottom:1px solid #f3f4f6; }
+  /* Lista de animales */
+  .animal-list   { max-height:280px; overflow-y:auto; border:1px solid #e5e7eb;
+                   border-radius:8px; padding:.5rem; }
+  .animal-item   { display:flex; align-items:center; gap:.5rem; padding:.35rem .5rem;
+                   border-radius:6px; transition:background .1s; }
+  .animal-item:hover { background:#f9fafb; }
+  .animal-item label { font-size:.85rem; cursor:pointer; flex:1; margin:0; }
+  .animal-item .arete { font-weight:500; }
+  .animal-item .rfid  { font-size:.75rem; color:#9ca3af; }
+  .badge-etapa   { font-size:.7rem; background:#f3f4f6; color:#374151; border:1px solid #e5e7eb; border-radius:5px; padding:.1rem .45rem; }
+  /* Potrero selector */
+  .potrero-filter { display:flex; align-items:center; gap:.75rem; background:#f9fafb;
+                    border:1px solid #e5e7eb; border-radius:8px; padding:.6rem .85rem;
+                    margin-bottom:.75rem; }
+  .potrero-filter label { font-size:.82rem; font-weight:500; white-space:nowrap; margin:0; }
+  .count-chip    { font-size:.75rem; color:#6b7280; }
+  /* Actions */
+  .sheet-footer  { margin-top:1.5rem; display:flex; justify-content:flex-end; gap:.75rem;
+                   border-top:1px solid #e5e7eb; padding-top:1rem; }
+  .btn-soft      { border-radius:999px; padding:.45rem 1.15rem; font-size:.85rem; }
+  .btn-primary-ganadero { border-radius:999px; padding:.45rem 1.4rem; font-size:.87rem;
+                          background:#020617; border-color:#020617; }
+  .btn-primary-ganadero:hover { opacity:.9; background:#020617; }
+  /* Seleccionar todo */
+  .select-all-bar { display:flex; justify-content:flex-end; gap:.6rem; margin-bottom:.4rem; }
+  .select-all-bar button { font-size:.78rem; padding:.15rem .55rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="sheet-wrapper">
+  <div class="sheet">
+
+    <!-- Encabezado -->
+    <div class="d-flex justify-content-between align-items-start mb-3">
+      <div>
+        <div class="sheet-title">
+          <i class="bi bi-activity me-1 text-success"></i>Registro masivo de evento
+        </div>
+        <div class="sheet-sub">
+          Selecciona los animales y completa los datos del evento. Se creará un registro por cada animal.
+        </div>
+      </div>
+      <a href="{% url 'eventos:list' %}" class="btn btn-light btn-sm" title="Volver">
+        <i class="bi bi-x-lg"></i>
+      </a>
+    </div>
+
+    <!-- Mensajes Django -->
+    {% if messages %}
+      {% for msg in messages %}
+        <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}{{ msg.tags }}{% endif %} py-2 mb-2">{{ msg }}</div>
+      {% endfor %}
+    {% endif %}
+
+    <!-- Errores generales -->
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger py-2 mb-2">
+      <ul class="mb-0">
+        {% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <!-- Preservar potrero seleccionado al hacer submit -->
+      <input type="hidden" name="potrero_id" value="{{ potrero_obj.pk|default:'' }}">
+
+      <!-- ── PASO 1: Filtro por potrero ── -->
+      <div class="section-label">Paso 1 · Filtrar animales por potrero (opcional)</div>
+      <div class="potrero-filter">
+        <i class="bi bi-grid-3x3-gap text-muted"></i>
+        <label for="sel-potrero">Potrero</label>
+        <select id="sel-potrero" class="form-select form-select-sm" style="max-width:260px;"
+                onchange="window.location='{% url 'eventos:masivo' %}?potrero='+this.value">
+          <option value="">Todos los animales activos</option>
+          {% for p in potreros %}
+          <option value="{{ p.pk }}" {% if potrero_obj.pk == p.pk %}selected{% endif %}>
+            {{ p.nombre_codigo }}{% if p.area_ha %} ({{ p.area_ha }} ha){% endif %}
+          </option>
+          {% endfor %}
+        </select>
+        {% if potrero_obj %}
+          <span class="count-chip">
+            <i class="bi bi-tag me-1"></i>
+            {{ form.fields.animales.queryset.count }} animal{{ form.fields.animales.queryset.count|pluralize }}
+          </span>
+          <a href="{% url 'eventos:masivo' %}" class="btn btn-outline-secondary btn-sm py-0">
+            <i class="bi bi-x"></i> Quitar filtro
+          </a>
+        {% endif %}
+      </div>
+
+      <!-- ── PASO 2: Selección de animales ── -->
+      <div class="section-label">Paso 2 · Seleccionar animales <span class="required">*</span></div>
+      {% if form.animales.errors %}
+        <div class="text-danger small mb-2">{{ form.animales.errors|join:" " }}</div>
+      {% endif %}
+
+      <div class="select-all-bar">
+        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="toggleAll(true)">Seleccionar todos</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="toggleAll(false)">Deseleccionar todos</button>
+      </div>
+
+      <div class="animal-list" id="animal-list">
+        {% for checkbox in form.animales %}
+        <div class="animal-item">
+          {{ checkbox.tag }}
+          <label for="{{ checkbox.id_for_label }}">
+            <span class="arete">{{ checkbox.choice_label }}</span>
+          </label>
+        </div>
+        {% empty %}
+        <p class="text-muted small text-center py-3 mb-0">
+          <i class="bi bi-exclamation-circle me-1"></i>
+          {% if potrero_obj %}No hay animales activos en este potrero.
+          {% else %}No hay animales activos registrados.{% endif %}
+        </p>
+        {% endfor %}
+      </div>
+
+      <!-- ── PASO 3: Datos del evento ── -->
+      <div class="section-label">Paso 3 · Datos del evento</div>
+      <div class="row g-3">
+
+        <!-- Tipo -->
+        <div class="col-sm-6">
+          <label class="field-label">Tipo de evento <span class="required">*</span></label>
+          {{ form.tipo }}
+          {% if form.tipo.errors %}<div class="text-danger small mt-1">{{ form.tipo.errors|join:" " }}</div>
+          {% else %}<div class="field-help">Ej: Vacuna Aftosa, Desparasitación</div>{% endif %}
+        </div>
+
+        <!-- Fecha -->
+        <div class="col-sm-6">
+          <label class="field-label">Fecha <span class="required">*</span></label>
+          {{ form.fecha }}
+          {% if form.fecha.errors %}<div class="text-danger small mt-1">{{ form.fecha.errors|join:" " }}</div>{% endif %}
+        </div>
+
+        <!-- Responsable -->
+        <div class="col-12">
+          <label class="field-label">Responsable <span class="required">*</span></label>
+          {{ form.responsable }}
+          {% if form.responsable.errors %}<div class="text-danger small mt-1">{{ form.responsable.errors|join:" " }}</div>
+          {% else %}<div class="field-help">Nombre del veterinario u operario a cargo</div>{% endif %}
+        </div>
+
+        <!-- Producto -->
+        <div class="col-12">
+          <label class="field-label">Producto aplicado <span class="required">*</span></label>
+          {{ form.producto }}
+          {% if form.producto.errors %}<div class="text-danger small mt-1">{{ form.producto.errors|join:" " }}</div>{% endif %}
+        </div>
+
+        <!-- Dosis / Vía -->
+        <div class="col-sm-4">
+          <label class="field-label">Dosis</label>
+          {{ form.dosis }}
+        </div>
+        <div class="col-sm-4">
+          <label class="field-label">Vía de aplicación</label>
+          {{ form.via_aplicacion }}
+        </div>
+        <div class="col-sm-4">
+          <label class="field-label">Lote del producto</label>
+          {{ form.lote }}
+        </div>
+
+        <!-- Notas -->
+        <div class="col-12">
+          <label class="field-label">Observaciones</label>
+          {{ form.notas }}
+        </div>
+
+      </div>
+
+      <!-- Pie -->
+      <div class="sheet-footer">
+        <a href="{% url 'eventos:list' %}" class="btn btn-light btn-soft">Cancelar</a>
+        <button type="submit" class="btn btn-primary btn-primary-ganadero">
+          <i class="bi bi-check-all me-1"></i>Registrar eventos masivos
+        </button>
+      </div>
+    </form>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleAll(check) {
+  document.querySelectorAll('#animal-list input[type="checkbox"]').forEach(function(cb) {
+    cb.checked = check;
+  });
+}
+</script>
+{% endblock %}

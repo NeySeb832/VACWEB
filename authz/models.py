@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
 
 class Role(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -28,6 +29,31 @@ class UserRole(models.Model):
 
     class Meta:
         unique_together = ("user", "role")
+
+class UserProfile(models.Model):
+    """CU-001 RN-7: Perfil extendido con baja lógica. Nunca se elimina físicamente."""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
+    phone = models.CharField(max_length=32, blank=True)
+    # Baja lógica
+    is_deleted = models.BooleanField(default=False)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    deleted_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="deleted_profiles"
+    )
+
+    def __str__(self):
+        return f"Perfil de {self.user.username}"
+
+    def soft_delete(self, by_user):
+        self.is_deleted = True
+        self.deleted_at = timezone.now()
+        self.deleted_by = by_user
+        self.save(update_fields=["is_deleted", "deleted_at", "deleted_by"])
+        # También desactivar el User de Django
+        self.user.is_active = False
+        self.user.save(update_fields=["is_active"])
+
 
 class AuditLog(models.Model):
     # CU-001: RN-4 Auditoría obligatoria

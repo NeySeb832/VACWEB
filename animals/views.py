@@ -11,6 +11,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST
 
 from authz.decorators import require_perm
+from authz.utils import has_perm_code
 from .models import Animal, Potrero, Movimiento
 from .forms import AnimalForm
 from pesajes.models import Pesaje
@@ -116,6 +117,17 @@ def animal_detail(request, pk: int):
     pesaje_actual = pesajes_qs[-1] if num_pesajes else None
     pesajes = list(reversed(pesajes_qs))[:10]
 
+    # CU-006: Últimas transacciones del animal (importación local para evitar circular import)
+    from transacciones.models import Transaccion
+    ultimas_transacciones = (
+        Transaccion.objects
+        .filter(animal=animal)
+        .select_related("created_by")
+        .order_by("-fecha", "-created_at")[:5]
+    )
+    puede_leer_transacciones   = has_perm_code(request.user, "transacciones.read")
+    puede_escribir_transacciones = has_perm_code(request.user, "transacciones.write")
+
     ctx = {
         "animal": animal,
         "movimientos": movimientos,
@@ -125,6 +137,9 @@ def animal_detail(request, pk: int):
         "pesaje_actual": pesaje_actual,
         "num_pesajes": num_pesajes,
         "potreros_activos": PotreroModel.objects.filter(estado="ACTIVO").order_by("nombre_codigo"),
+        "ultimas_transacciones":      ultimas_transacciones,
+        "puede_leer_transacciones":   puede_leer_transacciones,
+        "puede_escribir_transacciones": puede_escribir_transacciones,
     }
     return render(request, "animals/animal_detail.html", ctx)
 
@@ -166,6 +181,19 @@ def animal_baja(request, pk: int):
     animal = get_object_or_404(Animal, pk=pk)
 
     if request.method == "POST":
+        # CU-002 E1: no se puede dar de baja con transacciones CONFIRMADAS pendientes
+        from transacciones.models import Transaccion
+        tiene_tx = Transaccion.objects.filter(
+            animal=animal, estado=Transaccion.Estado.CONFIRMADO
+        ).exists()
+        if tiene_tx:
+            messages.error(
+                request,
+                "No se puede dar de baja este animal: tiene transacciones comerciales "
+                "confirmadas. Anúlalas primero si corresponde."
+            )
+            return redirect("animals:detail", pk=animal.pk)
+
         motivo = request.POST.get("motivo_baja", "").strip()
         animal.estado = Animal.Estado.INACTIVO
         if motivo:

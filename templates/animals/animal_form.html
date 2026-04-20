@@ -212,6 +212,15 @@
           {% endif %}
         </div>
 
+        <!-- Fecha nacimiento -->
+        <div>
+          <label class="field-label">Fecha de nacimiento</label>
+          {{ form.fecha_nacimiento }}
+          {% if form.fecha_nacimiento.errors %}
+            <div class="text-danger small">{{ form.fecha_nacimiento.errors|join:", " }}</div>
+          {% endif %}
+        </div>
+
         <!-- Foto -->
         <div class="form-grid-full">
           <label class="field-label">Foto del animal</label>
@@ -222,6 +231,45 @@
             <div class="field-help">Adjunta una foto para facilitar la identificación visual.</div>
           {% endif %}
         </div>
+
+        <!-- ── CU-002: Datos de ingreso ── -->
+        <div class="form-grid-full">
+          <div class="field-label" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:#9ca3af;margin-top:.5rem;">
+            Datos de ingreso
+          </div>
+        </div>
+
+        <!-- Fecha ingreso -->
+        <div>
+          <label class="field-label">Fecha de ingreso</label>
+          {{ form.fecha_ingreso }}
+          {% if form.fecha_ingreso.errors %}
+            <div class="text-danger small">{{ form.fecha_ingreso.errors|join:", " }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Peso entrada -->
+        <div>
+          <label class="field-label">Peso de entrada (kg)</label>
+          {{ form.peso_entrada }}
+          {% if form.peso_entrada.errors %}
+            <div class="text-danger small">{{ form.peso_entrada.errors|join:", " }}</div>
+          {% else %}
+            <div class="field-help">{{ form.peso_entrada.help_text }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Procedencia -->
+        <div class="form-grid-full">
+          <label class="field-label">Procedencia</label>
+          {{ form.procedencia }}
+          {% if form.procedencia.errors %}
+            <div class="text-danger small">{{ form.procedencia.errors|join:", " }}</div>
+          {% else %}
+            <div class="field-help">{{ form.procedencia.help_text }}</div>
+          {% endif %}
+        </div>
+
       </div>
 
       <!-- Pie -->

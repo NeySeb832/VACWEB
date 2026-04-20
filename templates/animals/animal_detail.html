@@ -445,11 +445,76 @@
           <div class="text-muted small">No hay eventos sanitarios registrados.</div>
         {% endif %}
       </div>
+
+      {% if puede_leer_transacciones %}
+      <hr class="my-3">
+
+      <!-- Transacciones del animal (CU-006) -->
+      <div class="section-title mb-2 d-flex align-items-center justify-content-between">
+        <span>Transacciones</span>
+        <div class="d-flex gap-1">
+          {% if puede_escribir_transacciones and animal.estado != 'INA' %}
+          <a href="{% url 'transacciones:create' %}?animal={{ animal.pk }}"
+             id="btn-nueva-transaccion-ficha"
+             style="font-size:.72rem;color:#f9fafb;background:#020617;border-radius:999px;padding:.15rem .65rem;text-decoration:none;display:inline-flex;align-items:center;gap:.25rem;">
+            <i class="bi bi-plus-lg"></i> Nueva
+          </a>
+          {% endif %}
+          <a href="{% url 'transacciones:historial_animal' animal.pk %}"
+             style="font-size:.72rem;color:#374151;background:#f3f4f6;border:1px solid #d1d5db;border-radius:999px;padding:.15rem .65rem;text-decoration:none;display:inline-flex;align-items:center;gap:.25rem;">
+            <i class="bi bi-clock-history"></i> Ver todo
+          </a>
+        </div>
+      </div>
+      <div class="side-list">
+        {% if ultimas_transacciones %}
+          {% for t in ultimas_transacciones %}
+            <a href="{% url 'transacciones:detail' t.pk %}" class="text-decoration-none">
+              <div class="side-list-item" style="cursor:pointer;transition:border-color .15s;" onmouseover="this.style.borderColor='#020617'" onmouseout="this.style.borderColor='#e5e7eb'">
+                <div class="side-list-title" style="color:#111827;display:flex;align-items:center;gap:.35rem;">
+                  {% if t.tipo == 'COM' %}<span style="font-size:.67rem;background:#dcfce7;color:#166534;border-radius:999px;padding:.05rem .4rem;font-weight:600;">Compra</span>
+                  {% elif t.tipo == 'VEN' %}<span style="font-size:.67rem;background:#dbeafe;color:#1e40af;border-radius:999px;padding:.05rem .4rem;font-weight:600;">Venta</span>
+                  {% else %}<span style="font-size:.67rem;background:#fee2e2;color:#991b1b;border-radius:999px;padding:.05rem .4rem;font-weight:600;">Sacrificio</span>{% endif %}
+                  <span>${{ t.valor_cop|floatformat:0 }}</span>
+                  {% if t.estado == 'ANU' %}
+                    <span style="display:inline-flex;align-items:center;border-radius:999px;padding:.06rem .4rem;font-size:.66rem;font-weight:500;background:#e5e7eb;color:#4b5563;">Anulado</span>
+                  {% endif %}
+                </div>
+                <div class="side-list-meta">
+                  <span>{{ t.fecha|date:"Y-m-d" }}</span>
+                  <span>{{ t.origen_destino|truncatechars:20 }}</span>
+                </div>
+              </div>
+            </a>
+          {% endfor %}
+        {% else %}
+          <div class="text-muted small">No hay transacciones registradas.</div>
+        {% endif %}
+      </div>
+      {% endif %}
+
     </div>
   </div>
 </div>
 
 {% endblock %}
+
+{% if puede_leer_transacciones and puede_escribir_transacciones and animal.estado != 'INA' %}
+<!-- Modal transacciones (CU-006) -->
+<div class="modal fade" id="modalTransaccionFicha" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Nueva Transacción</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="modal-transaccion-ficha-body">
+        <div class="text-center py-4"><div class="spinner-border text-secondary" role="status"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
 
 {% block extra_js %}
 <script>
@@ -467,6 +532,54 @@
     btnCancelar.addEventListener('click', function () {
       selector.style.display = 'none';
       btnCambiar.style.display = 'inline-flex';
+    });
+  }
+
+  // CU-006: Modal de nueva transacción desde ficha del animal
+  const btnNuevaTx = document.getElementById('btn-nueva-transaccion-ficha');
+  if (btnNuevaTx) {
+    const modalTx   = new bootstrap.Modal(document.getElementById('modalTransaccionFicha'));
+    const modalBody = document.getElementById('modal-transaccion-ficha-body');
+    const fetchUrl  = btnNuevaTx.href;
+    const postUrl   = "{% url 'transacciones:create' %}";
+    const csrf      = "{{ csrf_token }}";
+
+    btnNuevaTx.addEventListener('click', function(e) {
+      e.preventDefault();
+      modalBody.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-secondary" role="status"></div></div>';
+      modalTx.show();
+      fetch(fetchUrl, {headers: {"X-Requested-With": "XMLHttpRequest"}})
+        .then(r => r.json())
+        .then(d => { modalBody.innerHTML = d.html; })
+        .catch(() => { modalBody.innerHTML = '<div class="alert alert-danger">Error al cargar el formulario.</div>'; });
+    });
+
+    document.getElementById('modalTransaccionFicha').addEventListener('submit', function(e) {
+      const form = e.target.closest('form');
+      if (!form) return;
+      e.preventDefault();
+      const btn = form.querySelector('button[type="submit"]');
+      if (btn) { btn.disabled = true; btn.textContent = 'Guardando…'; }
+      fetch(postUrl, {
+        method: 'POST', body: new FormData(form),
+        headers: {"X-Requested-With": "XMLHttpRequest", "X-CSRFToken": csrf},
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) { modalTx.hide(); window.location.reload(); }
+        else {
+          if (btn) { btn.disabled = false; btn.textContent = 'Registrar Transacción'; }
+          Object.entries(data.errors || {}).forEach(([field, msgs]) => {
+            const input = form.querySelector(`[name="${field}"]`);
+            const wrap  = input ? (input.closest('.mb-3') || input.parentElement) : null;
+            form.querySelectorAll('.ajax-error').forEach(el => el.remove());
+            const div = document.createElement('div');
+            div.className = 'text-danger small mt-1 ajax-error';
+            div.textContent = Array.isArray(msgs) ? msgs.join(' ') : msgs;
+            if (wrap) wrap.appendChild(div);
+          });
+        }
+      });
     });
   }
 </script>

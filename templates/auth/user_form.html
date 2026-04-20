@@ -1,0 +1,115 @@
+{% extends "base/menu_base.html" %}
+{% block title %}{% if is_create %}Nuevo usuario{% else %}Editar usuario{% endif %} · Control Ganadero{% endblock %}
+
+{% block extra_head %}
+<style>
+  .sheet-wrapper { display:flex; justify-content:center; }
+  .sheet         { margin-top:1.5rem; width:100%; max-width:580px; background:#fff; border-radius:18px;
+                   box-shadow:0 18px 50px rgba(15,23,42,.08); border:1px solid #e5e7eb; padding:1.75rem; }
+  .sheet-title   { font-size:1.1rem; font-weight:600; }
+  .sheet-sub     { font-size:.82rem; color:#6b7280; }
+  .field-label   { font-size:.78rem; font-weight:500; display:block; margin-bottom:.12rem; }
+  .required      { color:#ef4444; }
+  .sheet-footer  { margin-top:1.5rem; display:flex; justify-content:flex-end; gap:.75rem; padding-top:1rem; border-top:1px solid #e5e7eb; }
+  .btn-soft      { border-radius:999px; padding:.45rem 1.15rem; font-size:.85rem; }
+  .btn-save      { border-radius:999px; padding:.45rem 1.4rem; font-size:.87rem; background:#020617; border-color:#020617; }
+  .section-label { font-size:.72rem; text-transform:uppercase; letter-spacing:.06em; color:#9ca3af; margin:1rem 0 .5rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="sheet-wrapper">
+  <div class="sheet">
+
+    <div class="d-flex justify-content-between align-items-start mb-3">
+      <div>
+        <div class="sheet-title">{% if is_create %}Nuevo usuario{% else %}Editar usuario{% endif %}</div>
+        <div class="sheet-sub">
+          {% if is_create %}Completa los datos para crear la cuenta.
+          {% else %}Modifica los datos de «{{ edited_user.username }}».{% endif %}
+        </div>
+      </div>
+      <a href="{% url 'authz:user_list' %}" class="btn btn-light btn-sm"><i class="bi bi-x-lg"></i></a>
+    </div>
+
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger py-2 mb-3">
+      {% for e in form.non_field_errors %}{{ e }}{% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <div class="section-label">Datos personales</div>
+      <div class="row g-3">
+        <div class="col-sm-6">
+          <label class="field-label">Nombres</label>
+          {{ form.first_name }}
+          {% if form.first_name.errors %}<div class="text-danger small mt-1">{{ form.first_name.errors|join:" " }}</div>{% endif %}
+        </div>
+        <div class="col-sm-6">
+          <label class="field-label">Apellidos</label>
+          {{ form.last_name }}
+          {% if form.last_name.errors %}<div class="text-danger small mt-1">{{ form.last_name.errors|join:" " }}</div>{% endif %}
+        </div>
+        <div class="col-sm-6">
+          <label class="field-label">Nombre de usuario <span class="required">*</span></label>
+          {{ form.username }}
+          {% if form.username.errors %}<div class="text-danger small mt-1">{{ form.username.errors|join:" " }}</div>{% endif %}
+        </div>
+        <div class="col-sm-6">
+          <label class="field-label">Correo electrónico</label>
+          {{ form.email }}
+          {% if form.email.errors %}<div class="text-danger small mt-1">{{ form.email.errors|join:" " }}</div>{% endif %}
+        </div>
+        <div class="col-sm-6">
+          <label class="field-label">Teléfono</label>
+          {{ form.phone }}
+          {% if form.phone.errors %}<div class="text-danger small mt-1">{{ form.phone.errors|join:" " }}</div>{% endif %}
+        </div>
+        <div class="col-sm-6 d-flex align-items-end pb-1">
+          <div class="form-check ms-1">
+            {{ form.is_active }}
+            <label class="form-check-label small" for="{{ form.is_active.id_for_label }}">Usuario activo</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-label">Rol y acceso</div>
+      <div class="row g-3">
+        <div class="col-12">
+          <label class="field-label">Rol asignado</label>
+          {{ form.role }}
+          {% if form.role.errors %}<div class="text-danger small mt-1">{{ form.role.errors|join:" " }}</div>{% endif %}
+        </div>
+      </div>
+
+      {% if is_create %}
+      <div class="section-label">Contraseña</div>
+      <div class="row g-3">
+        <div class="col-sm-6">
+          <label class="field-label">Contraseña <span class="required">*</span></label>
+          {{ form.password }}
+          {% if form.password.errors %}<div class="text-danger small mt-1">{{ form.password.errors|join:" " }}</div>{% endif %}
+          {% if form.password.help_text %}<div class="text-muted small mt-1">{{ form.password.help_text }}</div>{% endif %}
+        </div>
+        <div class="col-sm-6">
+          <label class="field-label">Confirmar contraseña <span class="required">*</span></label>
+          {{ form.password_confirm }}
+          {% if form.password_confirm.errors %}<div class="text-danger small mt-1">{{ form.password_confirm.errors|join:" " }}</div>{% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="sheet-footer">
+        <a href="{% url 'authz:user_list' %}" class="btn btn-light btn-soft">Cancelar</a>
+        <button type="submit" class="btn btn-primary btn-save text-white">
+          <i class="bi bi-check-lg me-1"></i>
+          {% if is_create %}Crear usuario{% else %}Guardar cambios{% endif %}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

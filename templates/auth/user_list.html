@@ -1,0 +1,150 @@
+{% extends "base/menu_base.html" %}
+{% block title %}Usuarios · Control Ganadero{% endblock %}
+
+{% block extra_head %}
+<style>
+  .badge-activo   { background:#dcfce7; color:#15803d; }
+  .badge-inactivo { background:#fee2e2; color:#dc2626; }
+  .table th       { font-size:.78rem; text-transform:uppercase; letter-spacing:.04em; color:#6b7280; font-weight:600; border-bottom:1px solid #e5e7eb; }
+  .table td       { font-size:.87rem; vertical-align:middle; }
+  .avatar-sm      { width:34px; height:34px; border-radius:999px; display:inline-flex; align-items:center; justify-content:center; font-size:.85rem; font-weight:700; background:#e5e7eb; color:#374151; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h1 class="h4 fw-bold mb-0">Usuarios</h1>
+    <p class="text-muted small mb-0">{{ total }} usuario{{ total|pluralize }} registrado{{ total|pluralize }}</p>
+  </div>
+  {% if puede_escribir %}
+  <a href="{% url 'authz:user_create' %}" class="btn btn-dark btn-sm px-4">
+    <i class="bi bi-person-plus me-1"></i>Nuevo usuario
+  </a>
+  {% endif %}
+</div>
+
+<!-- Filtros -->
+<form method="get" class="row g-2 mb-3">
+  <div class="col-sm-4">
+    <input name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Buscar por nombre, usuario o email…">
+  </div>
+  <div class="col-sm-3">
+    <select name="role" class="form-select form-select-sm">
+      <option value="">Todos los roles</option>
+      {% for r in roles %}
+        <option value="{{ r.pk }}" {% if role_f == r.pk|stringformat:"s" %}selected{% endif %}>{{ r.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-sm-2">
+    <select name="activo" class="form-select form-select-sm">
+      <option value="">Estado: todos</option>
+      <option value="1" {% if activo == "1" %}selected{% endif %}>Activos</option>
+      <option value="0" {% if activo == "0" %}selected{% endif %}>Inactivos</option>
+    </select>
+  </div>
+  <div class="col-auto">
+    <button class="btn btn-outline-secondary btn-sm px-3">Filtrar</button>
+    <a href="{% url 'authz:user_list' %}" class="btn btn-outline-secondary btn-sm">Limpiar</a>
+  </div>
+</form>
+
+<!-- Tabla -->
+<div class="card border-0 shadow-sm">
+  <div class="table-responsive">
+    <table class="table mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Usuario</th>
+          <th>Email</th>
+          <th>Rol</th>
+          <th>Estado</th>
+          <th class="text-end">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in page_obj %}
+        <tr>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <div class="avatar-sm">{{ u.username|first|upper }}</div>
+              <div>
+                <div class="fw-semibold">{{ u.get_full_name|default:u.username }}</div>
+                <div class="text-muted small">@{{ u.username }}</div>
+              </div>
+            </div>
+          </td>
+          <td>{{ u.email|default:"—" }}</td>
+          <td>
+            {% for ur in u.userrole_set.all %}
+              <span class="badge bg-light text-dark border">{{ ur.role.name }}</span>
+            {% empty %}
+              <span class="text-muted small">Sin rol</span>
+            {% endfor %}
+          </td>
+          <td>
+            {% if u.is_active %}
+              <span class="badge badge-activo rounded-pill px-3">Activo</span>
+            {% else %}
+              <span class="badge badge-inactivo rounded-pill px-3">Inactivo</span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            {% if puede_escribir %}
+            <div class="d-flex gap-1 justify-content-end">
+              <a href="{% url 'authz:user_edit' u.pk %}" class="btn btn-sm btn-outline-secondary" title="Editar">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <a href="{% url 'authz:user_password_set' u.pk %}" class="btn btn-sm btn-outline-secondary" title="Cambiar contraseña">
+                <i class="bi bi-key"></i>
+              </a>
+              <form method="post" action="{% url 'authz:user_toggle_active' u.pk %}" class="d-inline">
+                {% csrf_token %}
+                <button class="btn btn-sm {% if u.is_active %}btn-outline-warning{% else %}btn-outline-success{% endif %}"
+                        title="{% if u.is_active %}Desactivar{% else %}Activar{% endif %}">
+                  <i class="bi {% if u.is_active %}bi-pause-circle{% else %}bi-play-circle{% endif %}"></i>
+                </button>
+              </form>
+              {% if u.pk != request.user.pk %}
+              <form method="post" action="{% url 'authz:user_soft_delete' u.pk %}"
+                    class="d-inline"
+                    onsubmit="return confirm('¿Eliminar (baja lógica) al usuario {{ u.username }}?')">
+                {% csrf_token %}
+                <button class="btn btn-sm btn-outline-danger" title="Eliminar">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+              {% endif %}
+            </div>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="text-center text-muted py-4">
+            <i class="bi bi-people fs-2 d-block mb-2"></i>
+            No hay usuarios que coincidan con los filtros.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Paginación -->
+{% if page_obj.has_other_pages %}
+<nav class="mt-3 d-flex justify-content-center">
+  <ul class="pagination pagination-sm mb-0">
+    {% if page_obj.has_previous %}
+      <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ q }}&role={{ role_f }}&activo={{ activo }}">‹</a></li>
+    {% endif %}
+    <li class="page-item disabled"><span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+    {% if page_obj.has_next %}
+      <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ q }}&role={{ role_f }}&activo={{ activo }}">›</a></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+{% endblock %}

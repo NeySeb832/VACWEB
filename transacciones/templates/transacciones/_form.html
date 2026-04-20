@@ -1,0 +1,226 @@
+{# transacciones/_form.html — partial para modal AJAX (NO extiende base) #}
+<form id="form-transaccion" novalidate>
+  {% csrf_token %}
+
+  {% if form.non_field_errors %}
+  <div class="alert alert-danger py-2 mb-3">
+    {% for err in form.non_field_errors %}{{ err }}{% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="row g-3">
+
+    <!-- Tipo -->
+    <div class="col-md-6 mb-3">
+      <label for="{{ form.tipo.id_for_label }}" class="form-label fw-semibold">
+        Tipo de transacción <span class="text-danger">*</span>
+      </label>
+      {{ form.tipo }}
+      {% if form.tipo.errors %}
+        <div class="text-danger small mt-1">{{ form.tipo.errors|join:" " }}</div>
+      {% endif %}
+    </div>
+
+    <!-- Fecha -->
+    <div class="col-md-6 mb-3">
+      <label for="{{ form.fecha.id_for_label }}" class="form-label fw-semibold">
+        Fecha <span class="text-danger">*</span>
+      </label>
+      {{ form.fecha }}
+      {% if form.fecha.errors %}
+        <div class="text-danger small mt-1">{{ form.fecha.errors|join:" " }}</div>
+      {% endif %}
+    </div>
+
+    <!-- Animal -->
+    <div class="col-12 mb-3" id="bloque-animal-existente">
+      <label for="{{ form.animal.id_for_label }}" class="form-label fw-semibold">
+        Animal <span class="text-danger">*</span>
+      </label>
+      {% if animal_prellenado %}
+        <input type="text" class="form-control" readonly
+               value="{{ animal_prellenado.arete|default:animal_prellenado.rfid|default:'SIN-ID' }} — {{ animal_prellenado.get_estado_display }}">
+        <input type="hidden" name="animal" value="{{ animal_prellenado.pk }}">
+      {% else %}
+        {{ form.animal }}
+      {% endif %}
+      {% if form.animal.errors %}
+        <div class="text-danger small mt-1">{{ form.animal.errors|join:" " }}</div>
+      {% endif %}
+    </div>
+
+    <!-- CU-006: Crear animal en el flujo de COMPRA -->
+    {% if not animal_prellenado %}
+    <div class="col-12 mb-1" id="bloque-crear-toggle" style="display:none;">
+      <div class="form-check">
+        {{ animal_form.crear_animal }}
+        <label class="form-check-label small fw-semibold" for="{{ animal_form.crear_animal.id_for_label }}">
+          Crear nuevo animal en esta compra
+        </label>
+        <div class="text-muted" style="font-size:.76rem;">
+          Si el animal no existe aún en el sistema, puedes crearlo directamente aquí.
+        </div>
+      </div>
+    </div>
+
+    <!-- Campos del animal nuevo (ocultos hasta que se marque el toggle) -->
+    <div class="col-12 p-0" id="bloque-animal-nuevo" style="display:none;">
+      <div class="border rounded p-3 bg-light mx-3 mb-2">
+        <div class="fw-semibold mb-2" style="font-size:.82rem;">
+          <i class="bi bi-tag-fill me-1 text-success"></i>Datos del animal nuevo
+        </div>
+        <div class="row g-2">
+          <div class="col-sm-6">
+            <label class="form-label small fw-semibold mb-1">RFID</label>
+            {{ animal_form.ani_rfid }}
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label small fw-semibold mb-1">Arete / Alias</label>
+            {{ animal_form.ani_arete }}
+          </div>
+          <div class="col-sm-4">
+            <label class="form-label small fw-semibold mb-1">Sexo</label>
+            {{ animal_form.ani_sexo }}
+          </div>
+          <div class="col-sm-4">
+            <label class="form-label small fw-semibold mb-1">Etapa</label>
+            {{ animal_form.ani_etapa }}
+          </div>
+          <div class="col-sm-4">
+            <label class="form-label small fw-semibold mb-1">Peso entrada (kg)</label>
+            {{ animal_form.ani_peso_entrada }}
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label small fw-semibold mb-1">Raza</label>
+            {{ animal_form.ani_raza }}
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label small fw-semibold mb-1">Procedencia</label>
+            {{ animal_form.ani_procedencia }}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Origen / Destino -->
+    <div class="col-md-8 mb-3">
+      <label for="{{ form.origen_destino.id_for_label }}" class="form-label fw-semibold" id="label-origen-destino">
+        Origen / Destino <span class="text-danger">*</span>
+      </label>
+      {{ form.origen_destino }}
+      {% if form.origen_destino.errors %}
+        <div class="text-danger small mt-1">{{ form.origen_destino.errors|join:" " }}</div>
+      {% endif %}
+    </div>
+
+    <!-- Peso final (opcional) -->
+    <div class="col-md-4 mb-3">
+      <label for="{{ form.peso_final_kg.id_for_label }}" class="form-label fw-semibold">
+        Peso final (kg)
+      </label>
+      {{ form.peso_final_kg }}
+      {% if form.peso_final_kg.errors %}
+        <div class="text-danger small mt-1">{{ form.peso_final_kg.errors|join:" " }}</div>
+      {% endif %}
+    </div>
+
+    <!-- Valor COP -->
+    <div class="col-md-6 mb-3">
+      <label for="{{ form.valor_cop.id_for_label }}" class="form-label fw-semibold">
+        Valor (COP) <span class="text-danger">*</span>
+      </label>
+      <div class="input-group">
+        <span class="input-group-text">$</span>
+        {{ form.valor_cop }}
+      </div>
+      {% if form.valor_cop.errors %}
+        <div class="text-danger small mt-1">{{ form.valor_cop.errors|join:" " }}</div>
+      {% endif %}
+    </div>
+
+    <!-- Observaciones -->
+    <div class="col-12 mb-3">
+      <label for="{{ form.observaciones.id_for_label }}" class="form-label fw-semibold">
+        Observaciones
+      </label>
+      {{ form.observaciones }}
+      {% if form.observaciones.errors %}
+        <div class="text-danger small mt-1">{{ form.observaciones.errors|join:" " }}</div>
+      {% endif %}
+    </div>
+
+  </div>
+
+  <div class="d-flex justify-content-end gap-2 mt-2 pt-2 border-top">
+    <button type="button" class="btn btn-outline-secondary btn-sm px-4"
+            data-bs-dismiss="modal">Cancelar</button>
+    <button type="submit" class="btn btn-dark btn-sm px-4">
+      <i class="bi bi-check-lg me-1"></i>Registrar Transacción
+    </button>
+  </div>
+</form>
+
+<script>
+(function () {
+  const tipoSelect  = document.getElementById('{{ form.tipo.id_for_label }}');
+  const labelOD     = document.getElementById('label-origen-destino');
+  const inputOD     = document.getElementById('{{ form.origen_destino.id_for_label }}');
+  const bloqueToggle = document.getElementById('bloque-crear-toggle');
+  const bloqueNuevo  = document.getElementById('bloque-animal-nuevo');
+  const bloqueExistente = document.getElementById('bloque-animal-existente');
+  const cbCrear      = document.getElementById('id_crear_animal');
+
+  function actualizarLabelOD() {
+    if (!tipoSelect || !labelOD || !inputOD) return;
+    const val = tipoSelect.value;
+    if (val === 'COM') {
+      labelOD.innerHTML = 'Origen <span class="text-danger">*</span>';
+      inputOD.placeholder = 'Ej: Finca El Roble / Proveedor';
+    } else if (val === 'VEN') {
+      labelOD.innerHTML = 'Destino <span class="text-danger">*</span>';
+      inputOD.placeholder = 'Ej: Comprador / Intermediario';
+    } else if (val === 'SAC') {
+      labelOD.innerHTML = 'Destino <span class="text-danger">*</span>';
+      inputOD.placeholder = 'Ej: Frigorífico Central';
+    } else {
+      labelOD.innerHTML = 'Origen / Destino <span class="text-danger">*</span>';
+    }
+  }
+
+  function toggleCrearAnimal() {
+    if (!bloqueToggle) return;
+    const esCOMPRA = tipoSelect && tipoSelect.value === 'COM';
+    bloqueToggle.style.display = esCOMPRA ? '' : 'none';
+    if (!esCOMPRA && cbCrear) {
+      cbCrear.checked = false;
+      if (bloqueNuevo) bloqueNuevo.style.display = 'none';
+      if (bloqueExistente) bloqueExistente.style.display = '';
+    }
+  }
+
+  function toggleBloqueAnimal() {
+    if (!cbCrear || !bloqueNuevo || !bloqueExistente) return;
+    const crear = cbCrear.checked;
+    bloqueNuevo.style.display      = crear ? '' : 'none';
+    bloqueExistente.style.display  = crear ? 'none' : '';
+    // Hacer el selector de animal no required cuando se usa inline
+    const animalSelect = bloqueExistente.querySelector('select');
+    if (animalSelect) animalSelect.required = !crear;
+  }
+
+  if (tipoSelect) {
+    tipoSelect.addEventListener('change', function() {
+      actualizarLabelOD();
+      toggleCrearAnimal();
+    });
+    actualizarLabelOD();
+    toggleCrearAnimal();
+  }
+
+  if (cbCrear) {
+    cbCrear.addEventListener('change', toggleBloqueAnimal);
+    toggleBloqueAnimal();
+  }
+})();
+</script>

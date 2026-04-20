@@ -311,7 +311,7 @@
         <ul class="dropdown-menu dropdown-menu-end">
           <li><a class="dropdown-item" href="#">Mi perfil</a></li>
           <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="{% url 'logout' %}">Cerrar sesión</a></li>
+          <li><a class="dropdown-item" href="{% url 'authz:logout' %}">Cerrar sesión</a></li>
         </ul>
       </div>
     </div>
@@ -332,14 +332,29 @@
           <i class="bi bi-tag"></i>
           <span>Animales</span>
         </a>
-        <a class="nav-link {% if request.resolver_match.app_name == 'eventos' %}active{% endif %}" href="{% url 'eventos:list' %}">
+        <a class="nav-link {% if request.resolver_match.app_name == 'eventos' %}active{% endif %}"
+           href="{% url 'eventos:list' %}">
           <i class="bi bi-activity"></i>
           <span>Eventos</span>
         </a>
+        {% if 'eventos.write' in user_perms %}
+        <a class="nav-link {% if request.resolver_match.url_name == 'masivo' %}active{% endif %}"
+           href="{% url 'eventos:masivo' %}">
+          <i class="bi bi-check2-all"></i>
+          <span>Evento masivo</span>
+        </a>
+        {% endif %}
         <a class="nav-link {% if request.resolver_match.app_name == 'pesajes' %}active{% endif %}" href="{% url 'pesajes:list' %}">
           <i class="bi bi-graph-up"></i>
           <span>Pesajes</span>
         </a>
+        {% if 'transacciones.read' in user_perms %}
+        <a class="nav-link {% if request.resolver_match.app_name == 'transacciones' %}active{% endif %}"
+           href="{% url 'transacciones:list' %}">
+          <i class="bi bi-arrow-left-right"></i>
+          <span>Transacciones</span>
+        </a>
+        {% endif %}
         <a class="nav-link" href="#">
           <i class="bi bi-bar-chart-line"></i>
           <span>Reportes</span>
@@ -350,6 +365,20 @@
           <i class="bi bi-grid-3x3-gap"></i>
           <span>Lotes / Potreros</span>
         </a>
+        {% if 'users.read' in user_perms %}
+        <a class="nav-link {% if request.resolver_match.url_name == 'user_list' or request.resolver_match.url_name == 'user_create' or request.resolver_match.url_name == 'user_edit' %}active{% endif %}"
+           href="{% url 'authz:user_list' %}">
+          <i class="bi bi-people"></i>
+          <span>Usuarios</span>
+        </a>
+        {% endif %}
+        {% if 'roles.read' in user_perms %}
+        <a class="nav-link {% if request.resolver_match.url_name == 'role_list' or request.resolver_match.url_name == 'role_create' or request.resolver_match.url_name == 'role_edit' %}active{% endif %}"
+           href="{% url 'authz:role_list' %}">
+          <i class="bi bi-shield-check"></i>
+          <span>Roles y Permisos</span>
+        </a>
+        {% endif %}
         <a class="nav-link" href="#">
           <i class="bi bi-question-circle"></i>
           <span>Ayuda</span>

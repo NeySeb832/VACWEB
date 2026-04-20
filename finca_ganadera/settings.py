@@ -19,7 +19,8 @@ INSTALLED_APPS = [
     "animals",  # app del CU-002
     "eventos",  # app del CU-003
     "pesajes",  # app del CU-004
-    "potreros", # app del CU-005
+    "potreros",      # app del CU-005
+    "transacciones", # app del CU-006
 ]
 
 MIDDLEWARE = [
@@ -47,6 +48,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "authz.context_processors.user_perms",
             ],
         },
     },

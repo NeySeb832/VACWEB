@@ -7,6 +7,7 @@ app_name = "eventos"
 urlpatterns = [
     path("", views.evento_list, name="list"),
     path("new/", views.evento_create, name="create"),
+    path("masivo/", views.evento_masivo_create, name="masivo"),  # CU-003 pasos 13-14
     path("<int:pk>/", views.evento_detail, name="detail"),
     path("<int:pk>/correccion/", views.evento_correccion, name="correccion"),
     path("<int:pk>/cancelar/", views.evento_cancelar, name="cancelar"),

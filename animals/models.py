@@ -43,6 +43,16 @@ class Animal(models.Model):
         blank=True,
         null=True,
     )
+    # CU-002: campos de ingreso
+    fecha_ingreso = models.DateField(blank=True, null=True, verbose_name="Fecha de ingreso")
+    peso_entrada = models.DecimalField(
+        max_digits=7, decimal_places=2, blank=True, null=True,
+        verbose_name="Peso de entrada (kg)"
+    )
+    procedencia = models.CharField(
+        max_length=120, blank=True, null=True,
+        verbose_name="Procedencia / Finca de origen"
+    )
     # Auditoría mínima (RN-5)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -98,7 +108,13 @@ class Animal(models.Model):
 
     @property
     def tiene_historial(self) -> bool:
-        return self.eventos.exists() or self.movimientos.exists()
+        # CU-002 RN-1: bloquea cambio de RFID/arete si hay cualquier registro asociado
+        return (
+            self.eventos.exists()
+            or self.movimientos.exists()
+            or self.pesajes.exists()
+            or self.transacciones.exists()
+        )
 
 
 class Movimiento(models.Model):

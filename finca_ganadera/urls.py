@@ -11,7 +11,7 @@ from django.conf.urls.static import static
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("", TemplateView.as_view(template_name="home.html"), name="home"),
-    path("", include("authz.urls")),
+    path("", include("authz.urls", namespace="authz")),
 
     # Flujo de restablecimiento de contraseña (CU-001)
     path("password_reset/", auth_views.PasswordResetView.as_view(template_name="auth/password_reset_form.html"), name="password_reset"),
@@ -22,6 +22,7 @@ urlpatterns = [
     path("eventos/", include("eventos.urls")),
     path("pesajes/", include("pesajes.urls")),
     path("potreros/", include("potreros.urls")),
+    path("transacciones/", include("transacciones.urls", namespace="transacciones")),
 ]
 
 if settings.DEBUG:

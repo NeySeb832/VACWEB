@@ -1,0 +1,50 @@
+{# transacciones/_anular.html — cuerpo del modal de anulación (incluido desde detail.html) #}
+<div class="alert alert-warning d-flex align-items-start gap-2 py-2 mb-3">
+  <i class="bi bi-exclamation-triangle-fill mt-1 flex-shrink-0"></i>
+  <div class="small">
+    <strong>Acción irreversible.</strong> La anulación revertirá el cambio de estado del animal
+    y quedará registrada permanentemente en el log de auditoría.
+  </div>
+</div>
+
+<!-- Resumen de la transacción -->
+<div class="mb-3 p-3 bg-light rounded-3" style="font-size:.85rem;">
+  <div class="row g-1">
+    <div class="col-6">
+      <span class="text-muted">Tipo:</span>
+      <strong class="ms-1">{{ transaccion.get_tipo_display }}</strong>
+    </div>
+    <div class="col-6">
+      <span class="text-muted">Fecha:</span>
+      <strong class="ms-1">{{ transaccion.fecha|date:"d/m/Y" }}</strong>
+    </div>
+    <div class="col-6">
+      <span class="text-muted">Animal:</span>
+      <strong class="ms-1">{{ transaccion.animal.arete|default:transaccion.animal.rfid|default:"SIN-ID" }}</strong>
+    </div>
+    <div class="col-6">
+      <span class="text-muted">Valor:</span>
+      <strong class="ms-1">${{ transaccion.valor_cop|floatformat:0 }}</strong>
+    </div>
+  </div>
+</div>
+
+<!-- Formulario de anulación -->
+<form id="form-anular" novalidate>
+  {% csrf_token %}
+  <div class="mb-3">
+    <label for="id_motivo_anulacion" class="form-label fw-semibold">
+      Motivo de anulación <span class="text-danger">*</span>
+    </label>
+    <textarea id="id_motivo_anulacion" name="motivo" rows="4" class="form-control"
+              placeholder="Describa el motivo de la anulación (mínimo 10 caracteres)..." required minlength="10"></textarea>
+    <div class="invalid-feedback" id="motivo-error"></div>
+  </div>
+  <div class="d-flex justify-content-end gap-2">
+    <button type="button" class="btn btn-outline-secondary btn-sm px-4"
+            data-bs-dismiss="modal">Cancelar</button>
+    <button type="submit" class="btn btn-danger btn-sm px-4" id="btn-confirmar-anular">
+      <i class="bi bi-slash-circle me-1"></i>Confirmar anulación
+    </button>
+  </div>
+</form>
