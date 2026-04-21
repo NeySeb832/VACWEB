@@ -264,26 +264,11 @@
         <i class="bi bi-droplet-half"></i>
       </div>
       <div class="brand-text">
-        <div class="title">Control Ganadero</div>
+        <div class="title">Control Ganadero (Finca La Lucila)</div>
         <div class="sub">Panel operativo</div>
       </div>
     </div>
 
-    <div class="topbar-center">
-      <div class="farm-selector">
-        <div class="farm-label">
-          Finca seleccionada
-          <small>Finca El Paraíso</small>
-        </div>
-        <button class="btn btn-sm btn-outline-secondary d-none d-md-inline-flex align-items-center">
-          <i class="bi bi-chevron-down me-1"></i> Cambiar finca
-        </button>
-        <span class="status-pill ms-2">
-          <span class="status-dot"></span>
-          Online
-        </span>
-      </div>
-    </div>
 
     <div class="d-flex align-items-center gap-3">
       <button class="btn-icon">
@@ -355,7 +340,8 @@
           <span>Transacciones</span>
         </a>
         {% endif %}
-        <a class="nav-link" href="#">
+        <a class="nav-link {% if request.resolver_match.app_name == 'reportes' %}active{% endif %}"
+           href="{% url 'reportes:index' %}">
           <i class="bi bi-bar-chart-line"></i>
           <span>Reportes</span>
         </a>

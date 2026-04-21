@@ -21,6 +21,7 @@ INSTALLED_APPS = [
     "pesajes",  # app del CU-004
     "potreros",      # app del CU-005
     "transacciones", # app del CU-006
+    "reportes",      # app del CU-007
 ]
 
 MIDDLEWARE = [

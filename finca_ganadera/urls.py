@@ -23,6 +23,7 @@ urlpatterns = [
     path("pesajes/", include("pesajes.urls")),
     path("potreros/", include("potreros.urls")),
     path("transacciones/", include("transacciones.urls", namespace="transacciones")),
+    path("reportes/",      include("reportes.urls",      namespace="reportes")),
 ]
 
 if settings.DEBUG:

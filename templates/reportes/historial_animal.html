@@ -1,0 +1,180 @@
+{% extends "base/menu_base.html" %}
+{% load static %}
+
+{% block title %}Historial por Animal · Reportes{% endblock %}
+
+{% block extra_head %}
+<style>
+  @media print {
+    .no-print { display:none !important; }
+    .animal-block { break-inside:avoid; }
+  }
+  .kpi-grid {
+    display:grid; grid-template-columns:repeat(3,1fr); gap:.85rem; margin-bottom:1.25rem;
+  }
+  .kpi-card {
+    background:#fff; border-radius:12px; border:1px solid #e5e7eb; padding:.9rem 1.1rem;
+  }
+  .kpi-label { font-size:.7rem; text-transform:uppercase; letter-spacing:.06em; color:#9ca3af; }
+  .kpi-value { font-size:1.55rem; font-weight:700; color:#111827; line-height:1.2; margin-top:.2rem; }
+  .kpi-sub   { font-size:.75rem; color:#6b7280; margin-top:.15rem; }
+  .table-card {
+    background:#fff; border-radius:14px; border:1px solid #e5e7eb; overflow:hidden;
+    margin-bottom:1rem;
+  }
+  .table-card-head {
+    padding:.75rem 1.1rem; border-bottom:1px solid #e5e7eb;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .table-card-title { font-weight:600; font-size:.9rem; }
+  th.sortable { cursor:pointer; user-select:none; white-space:nowrap; }
+  th.sortable:hover { background:#f9fafb; }
+  th.sortable::after { content:" ↕"; color:#9ca3af; font-size:.7rem; }
+  th.asc::after  { content:" ↑"; color:#111827; font-size:.7rem; }
+  th.desc::after { content:" ↓"; color:#111827; font-size:.7rem; }
+  .btn-accion {
+    border-radius:999px; padding:.38rem .95rem; font-size:.82rem;
+    display:inline-flex; align-items:center; gap:.35rem;
+  }
+  @media(max-width:768px) { .kpi-grid { grid-template-columns:1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="d-flex align-items-center justify-content-between mb-3 no-print">
+  <div>
+    <a href="{% url 'reportes:index' %}?desde={{ desde }}&hasta={{ hasta }}&lote={{ lote_filtro }}&estado={{ estado_filtro }}"
+       class="btn btn-sm btn-outline-secondary btn-accion me-2">
+      <i class="bi bi-arrow-left"></i> Volver
+    </a>
+    <span style="font-size:1.05rem;font-weight:600;">Historial por Animal</span>
+    <span class="text-muted" style="font-size:.8rem;margin-left:.5rem;">generado {{ today }}</span>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="?{{ request.GET.urlencode }}&exportar=csv"
+       class="btn btn-sm btn-outline-secondary btn-accion">
+      <i class="bi bi-filetype-csv"></i> Exportar CSV
+    </a>
+    <button onclick="window.print()" class="btn btn-sm btn-dark btn-accion">
+      <i class="bi bi-printer"></i> Imprimir / PDF
+    </button>
+  </div>
+</div>
+
+{% if error_fechas %}
+<div class="alert alert-warning d-flex align-items-center gap-2 no-print" role="alert">
+  <i class="bi bi-exclamation-triangle-fill"></i>
+  La fecha de inicio no puede ser posterior a la fecha fin. Mostrando todos los registros.
+</div>
+{% endif %}
+
+<!-- KPIs resumen -->
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div class="kpi-label"><i class="bi bi-tag me-1"></i>Animales en reporte</div>
+    <div class="kpi-value">{{ animals_data|length }}</div>
+    <div class="kpi-sub">con actividad en el período</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label"><i class="bi bi-calendar-event me-1"></i>Total eventos</div>
+    <div class="kpi-value">{{ total_eventos }}</div>
+    <div class="kpi-sub">sanitarios registrados</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label"><i class="bi bi-graph-up me-1"></i>Total pesajes</div>
+    <div class="kpi-value">{{ total_pesajes }}</div>
+    <div class="kpi-sub">en el período</div>
+  </div>
+</div>
+
+<!-- Tabla de historial -->
+<div class="table-card">
+  <div class="table-card-head">
+    <span class="table-card-title">Resumen por animal ({{ animals_data|length }})</span>
+    {% if desde or hasta %}
+    <span style="font-size:.78rem;color:#6b7280;">
+      {% if desde %}desde {{ desde }}{% endif %}{% if hasta %} hasta {{ hasta }}{% endif %}
+    </span>
+    {% endif %}
+  </div>
+
+  {% if animals_data %}
+  <div class="table-responsive">
+    <table class="table table-sm table-hover mb-0" id="tbl-historial">
+      <thead class="table-light">
+        <tr>
+          <th class="sortable" data-col="0">RFID</th>
+          <th class="sortable" data-col="1">Raza</th>
+          <th class="sortable" data-col="2">Lote</th>
+          <th class="sortable" data-col="3">Estado</th>
+          <th class="sortable" data-col="4">Eventos sanitarios</th>
+          <th class="sortable" data-col="5">Pesajes</th>
+          <th class="sortable" data-col="6">Movimientos</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in animals_data %}
+        <tr>
+          <td style="font-family:monospace;font-size:.82rem;">{{ row.animal.rfid }}</td>
+          <td>{{ row.animal.raza|default:"—" }}</td>
+          <td>{{ row.animal.potrero.nombre_codigo|default:"—" }}</td>
+          <td>
+            {% if row.animal.estado == "ACT" %}<span class="badge bg-success-subtle text-success">Activo</span>
+            {% elif row.animal.estado == "INA" %}<span class="badge bg-secondary-subtle text-secondary">Inactivo</span>
+            {% else %}<span class="badge bg-warning-subtle text-warning">Borrador</span>{% endif %}
+          </td>
+          <td class="text-center">
+            <span class="badge bg-primary-subtle text-primary">{{ row.n_eventos }}</span>
+          </td>
+          <td class="text-center">
+            <span class="badge bg-info-subtle text-info">{{ row.n_pesajes }}</span>
+          </td>
+          <td class="text-center">
+            <span class="badge bg-secondary-subtle text-secondary">{{ row.n_movs }}</span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-inbox" style="font-size:2rem;"></i>
+    <div class="mt-2">No hay animales con actividad en el período seleccionado.</div>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+  const table = document.getElementById("tbl-historial");
+  if (!table) return;
+  let lastCol = -1, asc = true;
+
+  table.querySelectorAll("th.sortable").forEach(th => {
+    th.addEventListener("click", () => {
+      const col = +th.dataset.col;
+      asc = (col === lastCol) ? !asc : true;
+      lastCol = col;
+      table.querySelectorAll("th.sortable").forEach(h => h.classList.remove("asc","desc"));
+      th.classList.add(asc ? "asc" : "desc");
+
+      const tbody = table.querySelector("tbody");
+      const rows = Array.from(tbody.rows);
+      rows.sort((a, b) => {
+        let av = a.cells[col].textContent.trim();
+        let bv = b.cells[col].textContent.trim();
+        const an = parseFloat(av.replace(",",".")), bn = parseFloat(bv.replace(",","."));
+        if (!isNaN(an) && !isNaN(bn)) return asc ? an - bn : bn - an;
+        return asc ? av.localeCompare(bv) : bv.localeCompare(av);
+      });
+      rows.forEach(r => tbody.appendChild(r));
+    });
+  });
+})();
+</script>
+{% endblock %}
