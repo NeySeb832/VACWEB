@@ -1,3 +1,5 @@
+import secrets
+
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -53,6 +55,31 @@ class UserProfile(models.Model):
         # También desactivar el User de Django
         self.user.is_active = False
         self.user.save(update_fields=["is_active"])
+
+
+class UserInvitation(models.Model):
+    """CU-001 RN-9: Token de invitación con expiración para activación de cuenta."""
+    user       = models.OneToOneField(User, on_delete=models.CASCADE, related_name="invitation")
+    token      = models.CharField(max_length=64, unique=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    used       = models.BooleanField(default=False)
+    used_at    = models.DateTimeField(null=True, blank=True)
+
+    def is_valid(self) -> bool:
+        return not self.used and timezone.now() < self.expires_at
+
+    @classmethod
+    def create_for_user(cls, user, hours: int = 24):
+        """Genera (o reemplaza) el token de invitación para el usuario."""
+        token = secrets.token_urlsafe(32)
+        expires = timezone.now() + timezone.timedelta(hours=hours)
+        # Si ya existía uno previo (reenvío), se elimina
+        cls.objects.filter(user=user).delete()
+        return cls.objects.create(user=user, token=token, expires_at=expires)
+
+    def __str__(self):
+        return f"Invitation for {self.user.username} (valid={self.is_valid()})"
 
 
 class AuditLog(models.Model):

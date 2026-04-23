@@ -39,5 +39,5 @@ class PesajeForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields["animal"].queryset = Animal.objects.filter(
             estado=Animal.Estado.ACTIVO
-        ).order_by("rfid", "arete")
+        ).order_by("rfid", "nombre")
         self.fields["animal"].empty_label = "Seleccione un animal"

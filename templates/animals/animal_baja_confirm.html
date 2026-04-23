@@ -139,7 +139,7 @@
     </a>
     <div>
       <div class="detail-title">
-        Dar de baja: {{ animal.arete|default:animal.rfid|default:"Sin identificador" }}
+        Dar de baja: {{ animal.nombre|default:animal.rfid|default:"Sin identificador" }}
       </div>
       <div class="detail-subtitle">
         RFID: {{ animal.rfid|default:"—" }}
@@ -152,8 +152,8 @@
   <div class="section-title">Información del animal</div>
   <div class="info-grid">
     <div>
-      <div class="info-label">Arete</div>
-      <div class="info-value">{{ animal.arete|default:"—" }}</div>
+      <div class="info-label">Nombre</div>
+      <div class="info-value">{{ animal.nombre|default:"—" }}</div>
     </div>
     <div>
       <div class="info-label">RFID</div>

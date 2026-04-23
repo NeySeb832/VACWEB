@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs grep *)",
+      "Bash(pip install *)",
+      "Bash(python -c \"from reportes.pdf_generator import generar_pdf_inventario, generar_pdf_historial, generar_pdf_sanitario, generar_pdf_ventas; print\\('OK — módulo pdf_generator importado correctamente'\\)\")",
+      "Bash(python manage.py check --deploy)",
+      "Bash(python manage.py check)",
+      "Bash(python manage.py migrate animals)",
+      "Bash(python -c ' *)",
+      "Bash(python manage.py test animals pesajes potreros transacciones reportes --verbosity=2)",
+      "Bash(python manage.py test animals pesajes potreros transacciones reportes --verbosity=1)",
+      "Bash(python manage.py test animals --verbosity=1)",
+      "Bash(grep -E \"\\\\.\\(pdf|docx|doc|md|txt|html\\)$\")",
+      "Read(//c/Users/seb83/Downloads/2.1.3 Casos de Uso-20260420T064208Z-3-001/2.1.3 Casos de Uso/**)",
+      "Bash(pandoc \"2.1.3.1 Caso de uso \\(CU001\\).docx\" -o output.md)",
+      "Bash(python -c \"import sys; data=sys.stdin.buffer.read\\(\\); print\\(data.decode\\('utf-8', errors='replace'\\)[:15000]\\)\")",
+      "Bash(python manage.py makemigrations authz --name=\"add_userinvitation\")",
+      "Bash(python manage.py migrate)",
+      "Bash(python manage.py test authz --verbosity=1)",
+      "Bash(set DJANGO_SETTINGS_MODULE=finca_ganadera.settings)",
+      "Bash(python manage.py test authz --verbosity=2)",
+      "Bash(python manage.py test authz --verbosity=1 --keepdb)",
+      "Bash(python -m pytest authz/ -x -q --no-header)",
+      "Bash(python manage.py test authz.tests.AuthzModelUtilsTests authz.tests.LoginViewTests --keepdb)",
+      "Bash(python manage.py test authz.tests.LoginViewTest authz.tests.UserManagementViewsTest --keepdb)",
+      "Bash(python manage.py test authz --keepdb --parallel)",
+      "Bash(timeout 90 python manage.py test authz --keepdb)",
+      "Bash(python manage.py test authz --noinput)",
+      "Bash(timeout 150 python manage.py test authz --noinput -v 0)",
+      "Bash(python manage.py test authz -v 1)",
+      "Bash(python manage.py test authz)",
+      "Bash(python manage.py test authz --noinput -v 1)",
+      "Bash(python manage.py createcachetable)",
+      "Bash(dir \"C:\\\\Users\\\\seb83\\\\Documents\\\\Universidad\\\\Practica de ingenieria 3\\\\Proyecto\\\\Aplicacion web gestion animales\\\\templates\\\\auth\\\\\")",
+      "PowerShell($p = \"C:\\\\Users\\\\seb83\\\\Documents\\\\Universidad\\\\Practica de ingenieria 3\\\\Proyecto\\\\Aplicacion web gestion animales\\\\templates\\\\auth\"; [System.IO.Directory]::GetFiles\\($p\\) | ForEach-Object { [System.IO.Path]::GetFileName\\($_\\) })"
+    ]
+  }
+}

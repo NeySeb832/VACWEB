@@ -1,4 +1,19 @@
+from django.shortcuts import render
 from .models import AuditLog
+
+
+class Custom404Middleware:
+    """Reemplaza la página amarilla de Django por la plantilla 404.html personalizada,
+    incluso cuando DEBUG=True."""
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        if response.status_code == 404:
+            return render(request, "404.html", {"request_path": request.path}, status=404)
+        return response
+
 
 class Log403Middleware:
     def __init__(self, get_response):

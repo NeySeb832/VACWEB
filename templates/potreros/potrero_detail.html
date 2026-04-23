@@ -180,7 +180,7 @@
         {% for a in animales %}
         <tr>
           <td>{{ a.rfid|default:"—" }}</td>
-          <td>{{ a.arete|default:"—" }}</td>
+          <td>{{ a.nombre|default:"—" }}</td>
           <td>{{ a.raza|default:"—" }}</td>
           <td>{{ a.get_etapa_display|default:"—" }}</td>
           <td class="text-end">

@@ -176,7 +176,7 @@
         {% endif %}
       </div>
       <div class="detail-subtitle">
-        Animal: {{ evento.animal.arete|default:evento.animal.rfid|default:"Sin ID" }}
+        Animal: {{ evento.animal.nombre|default:evento.animal.rfid|default:"Sin ID" }}
         &nbsp;·&nbsp; Evento #{{ evento.pk }}
       </div>
     </div>
@@ -243,7 +243,7 @@
           <div class="info-label">Animal</div>
           <div class="info-value">
             <a href="{% url 'animals:detail' evento.animal_id %}" class="text-decoration-none" style="color:#111827;">
-              {{ evento.animal.arete|default:evento.animal.rfid|default:"Sin ID" }}
+              {{ evento.animal.nombre|default:evento.animal.rfid|default:"Sin ID" }}
             </a>
           </div>
         </div>
@@ -378,8 +378,8 @@
       <div class="section-title">Animal</div>
       <div class="section-body info-grid" style="margin-bottom:.6rem;">
         <div>
-          <div class="info-label">Arete / Alias</div>
-          <div class="info-value">{{ evento.animal.arete|default:"—" }}</div>
+          <div class="info-label">Nombre del animal</div>
+          <div class="info-value">{{ evento.animal.nombre|default:"—" }}</div>
         </div>
         <div>
           <div class="info-label">RFID</div>

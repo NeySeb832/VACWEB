@@ -11,6 +11,14 @@ from django.db.models import Prefetch
 from django.http import HttpResponse
 from django.shortcuts import render
 
+from .pdf_generator import (
+    construir_meta,
+    generar_pdf_historial,
+    generar_pdf_inventario,
+    generar_pdf_sanitario,
+    generar_pdf_ventas,
+)
+
 from animals.models import Animal
 from authz.decorators import require_perm
 from authz.models import AuditLog
@@ -83,6 +91,13 @@ def _csv_response(filename: str) -> HttpResponse:
     return resp
 
 
+def _pdf_response(pdf_bytes: bytes, filename: str) -> HttpResponse:
+    resp = HttpResponse(content_type="application/pdf")
+    resp["Content-Disposition"] = f'attachment; filename="{filename}"'
+    resp.write(pdf_bytes)
+    return resp
+
+
 # ---------------------------------------------------------------------------
 # Vista 1: Índice / selector de reportes
 # ---------------------------------------------------------------------------
@@ -141,7 +156,7 @@ def reporte_inventario(request):
     else:
         qs = qs.filter(estado=Animal.Estado.ACTIVO)
 
-    qs = qs.order_by("potrero__nombre_codigo", "rfid", "arete")
+    qs = qs.order_by("potrero__nombre_codigo", "rfid", "nombre")
 
     # Construir lista enriquecida con peso actual y días en finca
     animals_data = []
@@ -162,13 +177,13 @@ def reporte_inventario(request):
         _registrar_log(request, "inventario", filtros, "csv")
         resp = _csv_response(f"reporte_inventario_{hoy}.csv")
         writer = csv.writer(resp)
-        writer.writerow(["RFID", "Arete", "Raza", "Sexo", "Etapa", "Nacimiento",
+        writer.writerow(["RFID", "Nombre", "Raza", "Sexo", "Etapa", "Nacimiento",
                          "Lote", "Peso (kg)", "Días en finca", "Estado"])
         for d in animals_data:
             a = d["animal"]
             writer.writerow([
                 a.rfid or "",
-                a.arete or "",
+                a.nombre or "",
                 a.raza or "",
                 a.get_sexo_display() if a.sexo else "",
                 a.get_etapa_display() if a.etapa else "",
@@ -179,6 +194,17 @@ def reporte_inventario(request):
                 a.get_estado_display(),
             ])
         return resp
+
+    # Exportar PDF
+    if exportar == "pdf" and not error_fechas:
+        _registrar_log(request, "inventario", filtros, "pdf")
+        meta = construir_meta(request, "Reporte de Inventario de Animales",
+                              desde_raw, hasta_raw, "Control de Inventario Ganadero")
+        kpi = {"total": total, "machos": machos, "hembras": hembras,
+               "peso_promedio": peso_promedio}
+        pdf_bytes = generar_pdf_inventario(animals_data, kpi, meta)
+        nombre = f"SIGAN_Inventario_{hoy}.pdf"
+        return _pdf_response(pdf_bytes, nombre)
 
     if not exportar and not error_fechas:
         _registrar_log(request, "inventario", filtros)
@@ -245,7 +271,7 @@ def reporte_historial_animal(request):
     if estado_raw:
         qs = qs.filter(estado=estado_raw)
 
-    qs = qs.order_by("rfid", "arete")
+    qs = qs.order_by("rfid", "nombre")
 
     # Filtrar movimientos por rango de fechas en Python (no hay FK de fecha en prefetch fácil)
     animals_data = []
@@ -269,13 +295,13 @@ def reporte_historial_animal(request):
         _registrar_log(request, "historial", filtros, "csv")
         resp = _csv_response(f"reporte_historial_{hoy}.csv")
         writer = csv.writer(resp)
-        writer.writerow(["RFID", "Arete", "Raza", "Lote", "Estado",
+        writer.writerow(["RFID", "Nombre", "Raza", "Lote", "Estado",
                          "Eventos Sanitarios", "Pesajes", "Movimientos"])
         for d in animals_data:
             a = d["animal"]
             writer.writerow([
                 a.rfid or "",
-                a.arete or "",
+                a.nombre or "",
                 a.raza or "",
                 str(a.potrero) if a.potrero else "",
                 a.get_estado_display(),
@@ -284,6 +310,20 @@ def reporte_historial_animal(request):
                 d["n_movs"],
             ])
         return resp
+
+    # Exportar PDF
+    if exportar == "pdf" and not error_fechas:
+        _registrar_log(request, "historial", filtros, "pdf")
+        meta = construir_meta(request, "Reporte de Historial por Animal",
+                              desde_raw, hasta_raw, "Trazabilidad Individual de Animales")
+        kpi = {
+            "total_animales": len(animals_data),
+            "total_eventos": sum(d["n_eventos"] for d in animals_data),
+            "total_pesajes": sum(d["n_pesajes"] for d in animals_data),
+        }
+        pdf_bytes = generar_pdf_historial(animals_data, kpi, meta)
+        nombre = f"SIGAN_Historial_{hoy}.pdf"
+        return _pdf_response(pdf_bytes, nombre)
 
     if not exportar and not error_fechas:
         _registrar_log(request, "historial", filtros)
@@ -356,10 +396,10 @@ def reporte_sanitario(request):
         _registrar_log(request, "sanitario", filtros, "csv")
         resp = _csv_response(f"reporte_sanitario_{hoy}.csv")
         writer = csv.writer(resp)
-        writer.writerow(["Fecha", "Animal (RFID/Arete)", "Lote", "Tipo",
+        writer.writerow(["Fecha", "Animal (RFID/Nombre)", "Lote", "Tipo",
                          "Producto", "Dosis", "Responsable", "Estado"])
         for e in eventos:
-            animal_id = e.animal.rfid or e.animal.arete or "SIN-ID"
+            animal_id = e.animal.rfid or e.animal.nombre or "SIN-ID"
             writer.writerow([
                 e.fecha.strftime("%d/%m/%Y"),
                 animal_id,
@@ -371,6 +411,20 @@ def reporte_sanitario(request):
                 e.get_estado_display(),
             ])
         return resp
+
+    # Exportar PDF
+    if exportar == "pdf" and not error_fechas:
+        _registrar_log(request, "sanitario", filtros, "pdf")
+        meta = construir_meta(request, "Reporte de Calendario Sanitario",
+                              desde_raw, hasta_raw, "Programación de Vacunas y Tratamientos")
+        kpi = {
+            "total_eventos": len(eventos),
+            "confirmados": confirmados,
+            "aplazados": aplicados,
+        }
+        pdf_bytes = generar_pdf_sanitario(eventos, kpi, meta)
+        nombre = f"SIGAN_Sanitario_{hoy}.pdf"
+        return _pdf_response(pdf_bytes, nombre)
 
     if not exportar and not error_fechas:
         _registrar_log(request, "sanitario", filtros)
@@ -440,10 +494,10 @@ def reporte_ventas(request):
         _registrar_log(request, "ventas", filtros, "csv")
         resp = _csv_response(f"reporte_ventas_{hoy}.csv")
         writer = csv.writer(resp)
-        writer.writerow(["Fecha", "Animal (RFID/Arete)", "Lote", "Destino",
+        writer.writerow(["Fecha", "Animal (RFID/Nombre)", "Lote", "Destino",
                          "Peso (kg)", "Valor (COP)", "Registrado por"])
         for v in ventas:
-            animal_id = v.animal.rfid or v.animal.arete or "SIN-ID"
+            animal_id = v.animal.rfid or v.animal.nombre or "SIN-ID"
             registrado = ""
             if v.created_by:
                 registrado = v.created_by.get_full_name() or v.created_by.username
@@ -457,6 +511,20 @@ def reporte_ventas(request):
                 registrado,
             ])
         return resp
+
+    # Exportar PDF
+    if exportar == "pdf" and not error_fechas:
+        _registrar_log(request, "ventas", filtros, "pdf")
+        meta = construir_meta(request, "Reporte Comercial — Ventas",
+                              desde_raw, hasta_raw, "Registro de Transacciones Comerciales")
+        kpi = {
+            "total_ventas": total_ventas,
+            "peso_total":   peso_total,
+            "valor_total":  valor_total,
+        }
+        pdf_bytes = generar_pdf_ventas(ventas, kpi, meta)
+        nombre = f"SIGAN_Ventas_{hoy}.pdf"
+        return _pdf_response(pdf_bytes, nombre)
 
     if not exportar and not error_fechas:
         _registrar_log(request, "ventas", filtros)

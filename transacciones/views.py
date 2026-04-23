@@ -93,7 +93,7 @@ def transaccion_list(request):
 
     if q:
         qs = qs.filter(Q(origen_destino__icontains=q) | Q(observaciones__icontains=q)
-                       | Q(animal__rfid__icontains=q) | Q(animal__arete__icontains=q))
+                       | Q(animal__rfid__icontains=q) | Q(animal__nombre__icontains=q))
     if tipo_filtro:
         qs = qs.filter(tipo=tipo_filtro)
     if estado_filtro:
@@ -129,7 +129,7 @@ def transaccion_list(request):
         "puede_anular":     has_perm_code(request.user, "transacciones.anular"),
         "tipo_choices":     Transaccion.Tipo.choices,
         "estado_choices":   Transaccion.Estado.choices,
-        "animales":         Animal.objects.order_by("rfid", "arete"),
+        "animales":         Animal.objects.order_by("rfid", "nombre"),
         "today":            str(_date.today()),
     }
     return render(request, "transacciones/list.html", ctx)
@@ -223,8 +223,8 @@ def transaccion_create(request):
             if crear_animal and form.cleaned_data.get("tipo") == "COM":
                 ad = animal_form.cleaned_data
                 new_animal = Animal(
-                    rfid          = ad.get("ani_rfid",  "") or None,
-                    arete         = ad.get("ani_arete", "") or None,
+                    rfid          = ad.get("ani_rfid",   "") or None,
+                    nombre        = ad.get("ani_nombre", "") or None,
                     sexo          = ad.get("ani_sexo",  "") or None,
                     etapa         = ad.get("ani_etapa", "") or None,
                     raza          = ad.get("ani_raza",  "") or None,

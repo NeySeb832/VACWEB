@@ -67,7 +67,7 @@ class Transaccion(models.Model):
         ]
 
     def __str__(self):
-        identificador = self.animal.rfid or self.animal.arete or "SIN-ID"
+        identificador = self.animal.rfid or self.animal.nombre or "SIN-ID"
         return f"{self.get_tipo_display()} · {identificador} · {self.fecha:%Y-%m-%d}"
 
     def clean(self):

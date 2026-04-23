@@ -100,7 +100,7 @@ def pesaje_list(request):
         "animal_filter": animal_filter_raw,
         "fecha_desde": fecha_desde_raw if fecha_desde else "",
         "fecha_hasta": fecha_hasta_raw if fecha_hasta else "",
-        "animales": Animal.objects.order_by("rfid", "arete"),
+        "animales": Animal.objects.order_by("rfid", "nombre"),
     })
 
 

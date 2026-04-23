@@ -14,7 +14,7 @@ class AnimalForm(forms.ModelForm):
         model = Animal
         fields = [
             "rfid",
-            "arete",
+            "nombre",
             "sexo",
             "etapa",
             "raza",
@@ -32,13 +32,13 @@ class AnimalForm(forms.ModelForm):
             "rfid": forms.TextInput(
                 attrs={
                     "class": "form-control",
-                    "placeholder": "RFID (opcional si usas arete)",
+                    "placeholder": "RFID — identificador principal (chapeta)",
                 }
             ),
-            "arete": forms.TextInput(
+            "nombre": forms.TextInput(
                 attrs={
                     "class": "form-control",
-                    "placeholder": "Arete visual o alias",
+                    "placeholder": "Nombre del animal (ej: La Negra, El Gordo)",
                 }
             ),
             "sexo": forms.Select(attrs={"class": "form-select"}),
@@ -81,7 +81,7 @@ class AnimalForm(forms.ModelForm):
             ),
         }
         help_texts = {
-            "estado": "Si marcas ACTIVO, se validan datos mínimos (RFID/arete, sexo, etapa y potrero).",
+            "estado": "Si marcas ACTIVO, se validan datos mínimos (RFID/nombre, sexo, etapa y potrero).",
             "potrero": "Potrero/lote actual donde se encuentra el animal.",
             "peso_entrada": "Peso al momento del ingreso (kg). Solo informativo.",
             "procedencia": "Finca de origen, propietario anterior o proveedor.",
@@ -99,6 +99,6 @@ class AnimalForm(forms.ModelForm):
         self.fields["potrero"].empty_label = "Seleccione un potrero"
 
         # Etiquetas más amigables
-        self.fields["rfid"].label = "RFID"
-        self.fields["arete"].label = "Nombre/Alias o Nº de arete"
+        self.fields["rfid"].label = "RFID (identificador principal)"
+        self.fields["nombre"].label = "Nombre del animal"
         self.fields["motivo_baja"].label = "Motivo de baja"

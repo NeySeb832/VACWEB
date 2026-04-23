@@ -28,7 +28,7 @@ def animal_list(request):
         - Permiso "animals.read".
 
     Comportamiento:
-        - Busca por RFID / arete / raza (?q=).
+        - Busca por RFID / nombre / raza (?q=).
         - Filtra por estado (?estado=) y potrero (?lote=).
         - Pagina los resultados (25 por página).
     """
@@ -45,7 +45,7 @@ def animal_list(request):
     if q:
         qs = qs.filter(
             Q(rfid__icontains=q)
-            | Q(arete__icontains=q)
+            | Q(nombre__icontains=q)
             | Q(raza__icontains=q)
         )
 
@@ -55,9 +55,9 @@ def animal_list(request):
     if lote:
         qs = qs.filter(potrero_id=lote)
 
-    # Columna derivada: nº de eventos sanitarios del animal
+    # Columna derivada: nº de eventos CONFIRMADOS pendientes (alertas reales)
     qs = qs.annotate(
-        num_alertas=Count("eventos"),
+        num_alertas=Count("eventos", filter=Q(eventos__estado="CON")),
     )
 
     paginator = Paginator(qs, 25)
@@ -110,6 +110,7 @@ def animal_detail(request, pk: int):
 
     movimientos = animal.movimientos.select_related("desde", "hacia").order_by("-fecha")[:10]
     eventos = animal.eventos.order_by("-fecha")[:10]
+    eventos_alertas = animal.eventos.filter(estado="CON")
 
     pesajes_qs = list(Pesaje.objects.filter(animal=animal).order_by("fecha"))
     num_pesajes = len(pesajes_qs)
@@ -132,6 +133,7 @@ def animal_detail(request, pk: int):
         "animal": animal,
         "movimientos": movimientos,
         "eventos": eventos,
+        "eventos_alertas": eventos_alertas,
         "pesajes": pesajes,
         "pesaje_inicial": pesaje_inicial,
         "pesaje_actual": pesaje_actual,

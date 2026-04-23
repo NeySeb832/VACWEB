@@ -48,7 +48,7 @@ def evento_list(request):
         "q": q,
         "animal_filter": animal_filter,
         "estado": estado,
-        "animales": Animal.objects.order_by("rfid", "arete"),
+        "animales": Animal.objects.order_by("rfid", "nombre"),
         "estado_choices": EventoSanitario.Estado.choices,
     }
     return render(request, "eventos/evento_list.html", ctx)

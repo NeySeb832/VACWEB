@@ -232,7 +232,7 @@
           {% for animal in page_obj.object_list %}
             <tr>
               <td>{{ animal.rfid|default:"—" }}</td>
-              <td>{{ animal.arete|default:"—" }}</td>
+              <td>{{ animal.nombre|default:"—" }}</td>
               <td>{{ animal.raza|default:"—" }}</td>
               <td>{{ animal.get_sexo_display|default:"—" }}</td>
               <td>

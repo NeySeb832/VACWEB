@@ -47,7 +47,7 @@ class TransaccionForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields["animal"].queryset = (
             Animal.objects.exclude(estado=Animal.Estado.INACTIVO)
-            .order_by("rfid", "arete")
+            .order_by("rfid", "nombre")
         )
         self.fields["animal"].empty_label = "Seleccione un animal"
         self.fields["tipo"].empty_label   = "Seleccione el tipo"
@@ -91,7 +91,7 @@ class AnimalInlineForm(forms.Form):
     """CU-006: Crear un animal nuevo en el flujo de una COMPRA.
 
     Todos los campos son opcionales en el formulario —
-    la vista valida que RFID o Arete esté presente cuando crear_animal=True.
+    la vista valida que RFID o Nombre esté presente cuando crear_animal=True.
     """
     crear_animal = forms.BooleanField(
         required=False,
@@ -101,12 +101,12 @@ class AnimalInlineForm(forms.Form):
     ani_rfid = forms.CharField(
         required=False, max_length=32,
         label="RFID del animal",
-        widget=forms.TextInput(attrs={**_TEXTO, "placeholder": "Opcional si hay arete"}),
+        widget=forms.TextInput(attrs={**_TEXTO, "placeholder": "RFID (chapeta) — opcional si hay nombre"}),
     )
-    ani_arete = forms.CharField(
+    ani_nombre = forms.CharField(
         required=False, max_length=32,
-        label="Arete / Alias",
-        widget=forms.TextInput(attrs={**_TEXTO, "placeholder": "Nombre o número de arete"}),
+        label="Nombre del animal",
+        widget=forms.TextInput(attrs={**_TEXTO, "placeholder": "Nombre del animal (ej: La Negra)"}),
     )
     ani_sexo = forms.ChoiceField(
         required=False,
@@ -140,11 +140,11 @@ class AnimalInlineForm(forms.Form):
     def clean(self):
         cleaned = super().clean()
         if cleaned.get("crear_animal"):
-            rfid  = cleaned.get("ani_rfid",  "").strip()
-            arete = cleaned.get("ani_arete", "").strip()
-            if not rfid and not arete:
+            rfid   = cleaned.get("ani_rfid",   "").strip()
+            nombre = cleaned.get("ani_nombre", "").strip()
+            if not rfid and not nombre:
                 raise forms.ValidationError(
-                    "Para crear un animal debes indicar al menos el RFID o el Arete."
+                    "Para crear un animal debes indicar al menos el RFID o el Nombre."
                 )
         return cleaned
 

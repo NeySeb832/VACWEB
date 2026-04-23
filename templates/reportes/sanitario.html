@@ -55,9 +55,10 @@
        class="btn btn-sm btn-outline-secondary btn-accion">
       <i class="bi bi-filetype-csv"></i> Exportar CSV
     </a>
-    <button onclick="window.print()" class="btn btn-sm btn-dark btn-accion">
-      <i class="bi bi-printer"></i> Imprimir / PDF
-    </button>
+    <a href="?{{ request.GET.urlencode }}&exportar=pdf"
+       class="btn btn-sm btn-danger btn-accion">
+      <i class="bi bi-file-earmark-pdf"></i> Exportar PDF
+    </a>
   </div>
 </div>
 

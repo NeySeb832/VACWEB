@@ -186,8 +186,8 @@
           <option value="">Todos los animales</option>
           {% for a in animales %}
             <option value="{{ a.pk }}" {% if animal_filter|add:"" == a.pk|stringformat:"s" %}selected{% endif %}>
-              {{ a.arete|default:a.rfid|default:"Sin ID" }}
-              {% if a.rfid and a.arete %} ({{ a.rfid }}){% endif %}
+              {{ a.nombre|default:a.rfid|default:"Sin ID" }}
+              {% if a.rfid and a.nombre %} ({{ a.rfid }}){% endif %}
             </option>
           {% endfor %}
         </select>
@@ -245,7 +245,7 @@
             <tr>
               <td>
                 <a href="{% url 'animals:detail' p.animal_id %}" class="text-decoration-none" style="color:#111827;">
-                  {{ p.animal.arete|default:p.animal.rfid|default:"Sin ID" }}
+                  {{ p.animal.nombre|default:p.animal.rfid|default:"Sin ID" }}
                 </a>
               </td>
               <td>{{ p.fecha|date:"d/m/Y" }}</td>

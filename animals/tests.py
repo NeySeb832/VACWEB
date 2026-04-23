@@ -54,11 +54,11 @@ def make_potrero(nombre: str = "P1", activo: bool = True) -> Potrero:
     )
 
 
-def make_animal_activo(potrero: Potrero, rfid: str = "COL-1234567890", arete: str = "A-001") -> Animal:
+def make_animal_activo(potrero: Potrero, rfid: str = "COL-1234567890", nombre: str = "A-001") -> Animal:
     """Devuelve una instancia de Animal con datos mínimos para estado ACTIVO (sin guardar)."""
     return Animal(
         rfid=rfid,
-        arete=arete,
+        nombre=nombre,
         sexo=Animal.Sexo.MACHO,
         etapa=Animal.Etapa.LEVANTE,
         raza="Brahman",
@@ -94,7 +94,7 @@ class AnimalModelRNTests(TestCase):
         )
         with self.assertRaises(ValidationError) as ctx:
             animal.full_clean()
-        self.assertIn("RFID/Arete", str(ctx.exception))
+        self.assertIn("RFID/Nombre", str(ctx.exception))
 
     # ── CP-MODEL-02 ──────────────────────────────────────────────────────────
     def test_activo_sin_sexo_lanza_error(self):
@@ -153,7 +153,7 @@ class AnimalModelRNTests(TestCase):
     # ── CP-MODEL-07 ──────────────────────────────────────────────────────────
     def test_cambiar_rfid_con_historial_bloqueado(self):
         """RN-1: animal con historial (movimiento) → cambiar RFID lanza ValidationError."""
-        animal = make_animal_activo(self.potrero, rfid="COL-HIST-001", arete="A-HIST-001")
+        animal = make_animal_activo(self.potrero, rfid="COL-HIST-001", nombre="A-HIST-001")
         animal.save()
         potrero2 = make_potrero("P2")
         Movimiento.objects.create(
@@ -167,7 +167,7 @@ class AnimalModelRNTests(TestCase):
     # ── CP-MODEL-08 ──────────────────────────────────────────────────────────
     def test_cambiar_rfid_sin_historial_permitido(self):
         """RN-1: animal SIN historial → cambiar RFID permitido."""
-        animal = make_animal_activo(self.potrero, rfid="COL-SIN-HIST", arete="A-SIN-HIST")
+        animal = make_animal_activo(self.potrero, rfid="COL-SIN-HIST", nombre="A-SIN-HIST")
         animal.save()
         animal.rfid = "COL-SIN-HIST-NEW"
         animal.full_clean()  # no debe lanzar error
@@ -201,7 +201,7 @@ class AnimalModelRNTests(TestCase):
     # ── CP-MODEL-11 ──────────────────────────────────────────────────────────
     def test_baja_logica_no_elimina_registro(self):
         """RN-3: baja lógica → animal persiste en DB con estado INACTIVO y motivo guardado."""
-        animal = make_animal_activo(self.potrero, rfid="COL-BAJA-001", arete="A-BAJA-001")
+        animal = make_animal_activo(self.potrero, rfid="COL-BAJA-001", nombre="A-BAJA-001")
         animal.save()
         pk = animal.pk
 
@@ -229,7 +229,7 @@ class AnimalRBACTests(TestCase):
         self.potrero = make_potrero("P-RBAC")
         self.animal = Animal.objects.create(
             rfid="COL-RBAC-001",
-            arete="A-RBAC-001",
+            nombre="A-RBAC-001",
             sexo=Animal.Sexo.MACHO,
             etapa=Animal.Etapa.ADULTO,
             potrero=self.potrero,
@@ -342,7 +342,7 @@ class AnimalVistaTests(TestCase):
         # Animal de referencia reutilizado en varias pruebas
         self.animal = Animal.objects.create(
             rfid="COL-REF-001",
-            arete="A-REF-001",
+            nombre="A-REF-001",
             sexo=Animal.Sexo.MACHO,
             etapa=Animal.Etapa.LEVANTE,
             raza="Brahman",
@@ -382,7 +382,7 @@ class AnimalVistaTests(TestCase):
         """GET ?lote=<id> → todos los resultados pertenecen a ese potrero."""
         Animal.objects.create(
             rfid="COL-P2-001",
-            arete="A-P2-001",
+            nombre="A-P2-001",
             sexo=Animal.Sexo.HEMBRA,
             etapa=Animal.Etapa.ADULTO,
             potrero=self.potrero2,
@@ -409,7 +409,7 @@ class AnimalVistaTests(TestCase):
         """
         data = {
             "rfid": "COL-NEW-001",
-            "arete": "A-NEW-001",
+            "nombre": "A-NEW-001",
             "sexo": Animal.Sexo.MACHO,
             "etapa": Animal.Etapa.TERNERO,
             "raza": "Angus",
@@ -432,7 +432,7 @@ class AnimalVistaTests(TestCase):
         count_antes = Animal.objects.count()
         data = {
             "rfid": "",
-            "arete": "",
+            "nombre": "",
             "sexo": "",
             "etapa": "",
             "raza": "",
@@ -467,7 +467,7 @@ class AnimalVistaTests(TestCase):
         """
         data = {
             "rfid": "COL-REF-001",
-            "arete": "A-REF-001",
+            "nombre": "A-REF-001",
             "sexo": Animal.Sexo.MACHO,
             "etapa": Animal.Etapa.NOVILLO,  # cambio respecto al setUp
             "raza": "Brahman",

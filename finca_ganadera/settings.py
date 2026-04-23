@@ -34,6 +34,8 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # Middleware para auditar 403 (CU-001, RN-4)
     "authz.middleware.Log403Middleware",
+    # Middleware para mostrar 404.html personalizado incluso con DEBUG=True
+    "authz.middleware.Custom404Middleware",
 ]
 
 ROOT_URLCONF = "finca_ganadera.urls"
@@ -106,15 +108,18 @@ REST_FRAMEWORK = {
 }
 
 # --- CU-001: Bloqueo por intentos (RN-1)
-AUTHZ_LOGIN_MAX_ATTEMPTS = 5
+AUTHZ_LOGIN_MAX_ATTEMPTS = 3   # 3 intentos fallidos → bloqueo (configurable, RN-1)
 AUTHZ_LOGIN_BLOCK_MINUTES = 10
 
+# --- CU-001: Expiración de invitaciones (RN-9)
+AUTHZ_INVITE_EXPIRY_HOURS = 24
+
 # --- Cache para contadores y bloqueo (RN-1)
+# Usamos DatabaseCache para que los contadores persistan entre reinicios del servidor
 CACHES = {
     "default": {
-        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-        "LOCATION": "authz-locmem",
-        "TIMEOUT": None,
+        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+        "LOCATION": "authz_cache",  # nombre de la tabla en MySQL
     }
 }
 

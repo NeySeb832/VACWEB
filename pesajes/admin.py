@@ -20,7 +20,7 @@ class PesajeAdmin(admin.ModelAdmin):
         "created_at",
     )
     list_filter = ("fecha",)
-    search_fields = ("animal__rfid", "animal__arete", "responsable")
+    search_fields = ("animal__rfid", "animal__nombre", "responsable")
     autocomplete_fields = ("animal",)
     readonly_fields = (
         "variacion_kg",

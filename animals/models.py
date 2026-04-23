@@ -28,7 +28,8 @@ class Animal(models.Model):
         BORRADOR = "BOR", "Borrador"      # RN-2 si faltan datos mínimos
 
     rfid = models.CharField(max_length=32, blank=True, null=True, unique=True)
-    arete = models.CharField(max_length=32, blank=True, null=True, unique=True)
+    nombre = models.CharField(max_length=32, blank=True, null=True, unique=True,
+                              verbose_name="Nombre")
     sexo = models.CharField(max_length=1, choices=Sexo.choices, blank=True, null=True)
     etapa = models.CharField(max_length=3, choices=Etapa.choices, blank=True, null=True)
     raza = models.CharField(max_length=48, blank=True, null=True)
@@ -64,15 +65,15 @@ class Animal(models.Model):
         ordering = ["-created_at"]
 
     def __str__(self) -> str:
-        return f"{self.rfid or self.arete or 'SIN-ID'}"
+        return f"{self.rfid or self.nombre or 'SIN-ID'}"
 
     # RN-2: si estado ACTIVO → debe tener mínimos
     def clean(self):
         # RN-2: estado ACTIVO requiere datos mínimos
         if self.estado == self.Estado.ACTIVO:
             missing = []
-            if not (self.rfid or self.arete):
-                missing.append("RFID/Arete")
+            if not (self.rfid or self.nombre):
+                missing.append("RFID/Nombre")
             if not self.sexo:
                 missing.append("Sexo")
             if not self.etapa:
@@ -84,7 +85,7 @@ class Animal(models.Model):
                     {"__all__": f"Para estado ACTIVO faltan: {', '.join(missing)}"}
                 )
 
-        # RN-1: RFID y Arete son inmutables si el animal ya tiene historial
+        # RN-1: RFID y Nombre son inmutables si el animal ya tiene historial
         if self.pk:
             try:
                 prev = Animal.objects.get(pk=self.pk)
@@ -97,9 +98,9 @@ class Animal(models.Model):
                         errores["rfid"] = (
                             "RN-1: No se puede modificar el RFID de un animal con historial."
                         )
-                    if prev.arete != self.arete:
-                        errores["arete"] = (
-                            "RN-1: No se puede modificar el Arete de un animal con historial."
+                    if prev.nombre != self.nombre:
+                        errores["nombre"] = (
+                            "RN-1: No se puede modificar el Nombre de un animal con historial."
                         )
                     if errores:
                         raise ValidationError(errores)
@@ -108,7 +109,7 @@ class Animal(models.Model):
 
     @property
     def tiene_historial(self) -> bool:
-        # CU-002 RN-1: bloquea cambio de RFID/arete si hay cualquier registro asociado
+        # CU-002 RN-1: bloquea cambio de RFID/nombre si hay cualquier registro asociado
         return (
             self.eventos.exists()
             or self.movimientos.exists()

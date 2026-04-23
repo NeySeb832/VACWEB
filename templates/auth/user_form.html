@@ -86,19 +86,14 @@
       </div>
 
       {% if is_create %}
-      <div class="section-label">Contraseña</div>
-      <div class="row g-3">
-        <div class="col-sm-6">
-          <label class="field-label">Contraseña <span class="required">*</span></label>
-          {{ form.password }}
-          {% if form.password.errors %}<div class="text-danger small mt-1">{{ form.password.errors|join:" " }}</div>{% endif %}
-          {% if form.password.help_text %}<div class="text-muted small mt-1">{{ form.password.help_text }}</div>{% endif %}
-        </div>
-        <div class="col-sm-6">
-          <label class="field-label">Confirmar contraseña <span class="required">*</span></label>
-          {{ form.password_confirm }}
-          {% if form.password_confirm.errors %}<div class="text-danger small mt-1">{{ form.password_confirm.errors|join:" " }}</div>{% endif %}
-        </div>
+      <div class="section-label">Activación</div>
+      <div class="alert alert-info py-2 mb-0 d-flex align-items-center gap-2" style="border-radius:10px;">
+        <i class="bi bi-envelope-check fs-5"></i>
+        <span class="small">
+          Se enviará un <strong>email de invitación</strong> al correo registrado.
+          El usuario define su propia contraseña al activar la cuenta (RN-9).
+          El enlace expira en <strong>{{ invite_hours }} horas</strong>.
+        </span>
       </div>
       {% endif %}
 

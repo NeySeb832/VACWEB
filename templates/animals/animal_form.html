@@ -143,16 +143,16 @@
       </div>
 
       <div class="form-grid">
-        <!-- Alias / Arete -->
+        <!-- Alias / Nombre -->
         <div class="form-grid-full">
           <label class="field-label">
-            Nombre/Alias o Nº de arete
+            Nombre/Alias o Nombre
           </label>
-          {{ form.arete }}
-          {% if form.arete.errors %}
-            <div class="text-danger small">{{ form.arete.errors|join:", " }}</div>
+          {{ form.nombre }}
+          {% if form.nombre.errors %}
+            <div class="text-danger small">{{ form.nombre.errors|join:", " }}</div>
           {% else %}
-            <div class="field-help">Identificador visual del animal (arete, alias, etc.).</div>
+            <div class="field-help">Identificador visual del animal (nombre, alias, etc.).</div>
           {% endif %}
         </div>
 

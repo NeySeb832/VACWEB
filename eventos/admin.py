@@ -22,7 +22,7 @@ class EventoSanitarioAdmin(admin.ModelAdmin):
         "created_at",
     )
     list_filter = ("estado", "tipo", "fecha")
-    search_fields = ("animal__rfid", "animal__arete", "tipo", "responsable", "producto", "lote")
+    search_fields = ("animal__rfid", "animal__nombre", "tipo", "responsable", "producto", "lote")
     autocomplete_fields = ("animal",)
     readonly_fields = ("created_by", "created_at", "evento_original")
 

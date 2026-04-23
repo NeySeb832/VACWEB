@@ -1,5 +1,5 @@
 from functools import wraps
-from django.http import HttpResponseForbidden
+from django.core.exceptions import PermissionDenied
 from django.contrib.auth.decorators import login_required
 from .utils import has_perm_code
 
@@ -14,9 +14,9 @@ def require_perm(code: str):
         @wraps(view_func)
         def _wrapped(request, *args, **kwargs):
             if not request.user.is_authenticated:
-                return HttpResponseForbidden("No autenticado.")
+                raise PermissionDenied("No autenticado.")
             if not has_perm_code(request.user, code):
-                return HttpResponseForbidden("Permiso insuficiente.")
+                raise PermissionDenied(f"Permiso insuficiente: requieres «{code}».")
             return view_func(request, *args, **kwargs)
         return _wrapped
     return outer

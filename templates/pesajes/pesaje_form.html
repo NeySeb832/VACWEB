@@ -194,8 +194,8 @@
           <div class="animal-prellenado">
             <i class="bi bi-tag-fill"></i>
             <span>
-              {{ animal_obj.arete|default:animal_obj.rfid|default:"Sin ID" }}
-              {% if animal_obj.rfid and animal_obj.arete %}&nbsp;· RFID: {{ animal_obj.rfid }}{% endif %}
+              {{ animal_obj.nombre|default:animal_obj.rfid|default:"Sin ID" }}
+              {% if animal_obj.rfid and animal_obj.nombre %}&nbsp;· RFID: {{ animal_obj.rfid }}{% endif %}
             </span>
           </div>
           <input type="hidden" name="animal" value="{{ animal_obj.pk }}">

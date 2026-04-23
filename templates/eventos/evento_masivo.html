@@ -22,7 +22,7 @@
                    border-radius:6px; transition:background .1s; }
   .animal-item:hover { background:#f9fafb; }
   .animal-item label { font-size:.85rem; cursor:pointer; flex:1; margin:0; }
-  .animal-item .arete { font-weight:500; }
+  .animal-item .nombre { font-weight:500; }
   .animal-item .rfid  { font-size:.75rem; color:#9ca3af; }
   .badge-etapa   { font-size:.7rem; background:#f3f4f6; color:#374151; border:1px solid #e5e7eb; border-radius:5px; padding:.1rem .45rem; }
   /* Potrero selector */
@@ -125,7 +125,7 @@
         <div class="animal-item">
           {{ checkbox.tag }}
           <label for="{{ checkbox.id_for_label }}">
-            <span class="arete">{{ checkbox.choice_label }}</span>
+            <span class="nombre">{{ checkbox.choice_label }}</span>
           </label>
         </div>
         {% empty %}

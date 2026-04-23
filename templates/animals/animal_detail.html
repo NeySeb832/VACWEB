@@ -200,7 +200,7 @@
     </a>
     <div>
       <div class="detail-title">
-        {{ animal.arete|default:animal.rfid|default:"Sin identificador" }}
+        {{ animal.nombre|default:animal.rfid|default:"Sin identificador" }}
       </div>
       <div class="detail-subtitle">
         RFID: {{ animal.rfid|default:"—" }}
@@ -346,15 +346,14 @@
     </div>
 
 
-    <!-- Alertas (placeholder simple por ahora) -->
+    <!-- Alertas — solo eventos CONFIRMADOS (próximos a realizar) -->
     <div class="card-soft">
       <div class="section-title">Alertas activas</div>
       <div class="alerts-list">
-        {% if eventos %}
-          {# aquí podrías más adelante marcar eventos como "próxima vacuna" y demás #}
+        {% if eventos_alertas %}
           <div class="alert-item">
             <i class="bi bi-exclamation-triangle"></i>
-            El animal tiene {{ eventos|length }} evento(s) sanitario(s) registrado(s).
+            El animal tiene {{ eventos_alertas|length }} evento(s) sanitario(s) confirmado(s) pendiente(s) de realizar.
           </div>
         {% else %}
           <span class="text-muted small">No hay alertas activas registradas.</span>

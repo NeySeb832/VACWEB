@@ -275,7 +275,7 @@ class TransaccionFormTests(TestCase):
     # ── CP-FORM-06 ───────────────────────────────────────────────────────────
     def test_animal_inline_sin_rfid_ni_arete_invalido(self):
         form = AnimalInlineForm(data={"crear_animal": True,
-                                      "ani_rfid": "", "ani_arete": ""})
+                                      "ani_rfid": "", "ani_nombre": ""})
         self.assertFalse(form.is_valid())
         self.assertTrue(form.non_field_errors())
 
@@ -283,14 +283,14 @@ class TransaccionFormTests(TestCase):
     def test_animal_inline_con_rfid_valido(self):
         form = AnimalInlineForm(data={"crear_animal": True,
                                       "ani_rfid": "COL-INLINE-99",
-                                      "ani_arete": ""})
+                                      "ani_nombre": ""})
         self.assertTrue(form.is_valid(), form.errors)
 
     # ── CP-FORM-08 ───────────────────────────────────────────────────────────
     def test_animal_inline_sin_crear_animal_no_valida_campos(self):
         """crear_animal=False → no se exige rfid/arete."""
         form = AnimalInlineForm(data={"crear_animal": False,
-                                      "ani_rfid": "", "ani_arete": ""})
+                                      "ani_rfid": "", "ani_nombre": ""})
         self.assertTrue(form.is_valid(), form.errors)
 
     # ── CP-FORM-09 ───────────────────────────────────────────────────────────
@@ -600,7 +600,7 @@ class TransaccionVistaTests(TestCase):
                 # AnimalInlineForm
                 "crear_animal":   True,
                 "ani_rfid":       "COL-INLINE-01",
-                "ani_arete":      "",
+                "ani_nombre":      "",
                 "ani_sexo":       "M",
                 "ani_etapa":      "LEV",
                 "ani_raza":       "Brahman",

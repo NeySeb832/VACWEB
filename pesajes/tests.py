@@ -56,7 +56,7 @@ def make_animal(potrero: Potrero, rfid: str = "COL-PES-001",
                 estado: str = Animal.Estado.ACTIVO) -> Animal:
     return Animal.objects.create(
         rfid=rfid,
-        arete=f"AR-{rfid}",
+        nombre=f"AR-{rfid}",
         sexo=Animal.Sexo.MACHO,
         etapa=Animal.Etapa.LEVANTE,
         potrero=potrero,

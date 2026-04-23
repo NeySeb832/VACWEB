@@ -44,7 +44,7 @@ class EventoSanitarioForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields["animal"].queryset = Animal.objects.exclude(
             estado=Animal.Estado.INACTIVO
-        ).order_by("rfid", "arete")
+        ).order_by("rfid", "nombre")
         self.fields["animal"].empty_label = "Seleccione un animal"
         self.fields["fecha"].initial = None  # browser renderiza la fecha del campo default
 
@@ -102,7 +102,7 @@ class EventoMasivoForm(forms.Form):
 
     def __init__(self, *args, potrero=None, **kwargs):
         super().__init__(*args, **kwargs)
-        qs = Animal.objects.exclude(estado=Animal.Estado.INACTIVO).order_by("rfid", "arete")
+        qs = Animal.objects.exclude(estado=Animal.Estado.INACTIVO).order_by("rfid", "nombre")
         if potrero is not None:
             qs = qs.filter(potrero=potrero)
         self.fields["animales"].queryset = qs

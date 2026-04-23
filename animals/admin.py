@@ -36,7 +36,7 @@ class AnimalAdmin(admin.ModelAdmin):
     list_display = (
         "__str__",
         "rfid",
-        "arete",
+        "nombre",
         "sexo",
         "etapa",
         "raza",
@@ -45,13 +45,13 @@ class AnimalAdmin(admin.ModelAdmin):
         "created_at",
     )
     list_filter = ("estado", "sexo", "etapa", "raza", "potrero")
-    search_fields = ("rfid", "arete", "raza")
+    search_fields = ("rfid", "nombre", "raza")
     autocomplete_fields = ("potrero", "last_modified_by")
 
     readonly_fields = ("created_at", "updated_at", "last_modified_by")
 
     fieldsets = (
-        ("Identificación", {"fields": ("rfid", "arete", "foto")}),
+        ("Identificación", {"fields": ("rfid", "nombre", "foto")}),
         ("Características", {"fields": ("sexo", "etapa", "raza", "fecha_nacimiento", "potrero")}),
         ("Estado", {"fields": ("estado", "motivo_baja")}),
         ("Auditoría", {"fields": ("created_at", "updated_at", "last_modified_by")}),
@@ -68,5 +68,5 @@ class AnimalAdmin(admin.ModelAdmin):
 class MovimientoAdmin(admin.ModelAdmin):
     list_display = ("animal", "desde", "hacia", "fecha", "responsable")
     list_filter = ("fecha", "hacia", "desde")
-    search_fields = ("animal__rfid", "animal__arete", "responsable")
+    search_fields = ("animal__rfid", "animal__nombre", "responsable")
     autocomplete_fields = ("animal", "desde", "hacia")

@@ -248,7 +248,7 @@ def potrero_deactivate(request, pk: int):
     potrero = get_object_or_404(Potrero, pk=pk)
 
     animales_activos = list(
-        potrero.animales.filter(estado="ACT").values("rfid", "arete")[:50]
+        potrero.animales.filter(estado="ACT").values("rfid", "nombre")[:50]
     )
 
     if animales_activos:
@@ -260,7 +260,7 @@ def potrero_deactivate(request, pk: int):
                 f"{len(animales_activos)} animales activos asignados."
             ),
             "animales": [
-                {"rfid": a["rfid"] or "—", "nombre_alias": a["arete"] or "—"}
+                {"rfid": a["rfid"] or "—", "nombre_alias": a["nombre"] or "—"}
                 for a in animales_activos
             ],
         }, status=409)
