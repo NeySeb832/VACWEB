@@ -22,6 +22,8 @@ INSTALLED_APPS = [
     "potreros",      # app del CU-005
     "transacciones", # app del CU-006
     "reportes",      # app del CU-007
+    "alertas",       # app del CU-008
+    "dashboard",     # app del CU-009
 ]
 
 MIDDLEWARE = [
@@ -86,7 +88,7 @@ EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 DEFAULT_FROM_EMAIL = "no-reply@finca.local"
 
 LOGIN_URL = "/login/"
-LOGIN_REDIRECT_URL = "/"
+LOGIN_REDIRECT_URL = "/dashboard/"
 LOGOUT_REDIRECT_URL = "/login/"
 
 # --- DRF base (deny by default con IsAuthenticated en vistas; decoradores aplicarán permisos)
