@@ -90,7 +90,7 @@ def login_view(request):
             login(request, user)
             _clear_counters(identifier, ip)
             AuditLog.objects.create(user=user, action="login_success", ip=ip, user_agent=ua)
-            return redirect("animals:list")
+            return redirect(settings.LOGIN_REDIRECT_URL)
         else:
             _register_failed(identifier, ip)
             AuditLog.objects.create(user=None, action="login_failed", ip=ip, user_agent=ua, metadata={"username": identifier})
