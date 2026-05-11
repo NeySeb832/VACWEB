@@ -1,0 +1,86 @@
+[
+  {
+    "model": "alertas.reglaalerta",
+    "pk": 1,
+    "fields": {
+      "tipo": "sanitaria",
+      "subtipo": "proxima_vacuna",
+      "activa": true,
+      "umbral_valor": 7.0,
+      "umbral_unidad": "dias",
+      "descripcion": "Genera alerta cuando un evento sanitario programado vence en los próximos 7 días."
+    }
+  },
+  {
+    "model": "alertas.reglaalerta",
+    "pk": 2,
+    "fields": {
+      "tipo": "sanitaria",
+      "subtipo": "vacuna_vencida",
+      "activa": true,
+      "umbral_valor": 0.0,
+      "umbral_unidad": "dias",
+      "descripcion": "Genera alerta cuando un evento sanitario confirmado/aplazado no fue realizado y su fecha ya pasó."
+    }
+  },
+  {
+    "model": "alertas.reglaalerta",
+    "pk": 3,
+    "fields": {
+      "tipo": "productiva",
+      "subtipo": "variacion_peso",
+      "activa": true,
+      "umbral_valor": 10.0,
+      "umbral_unidad": "porcentaje",
+      "descripcion": "Genera alerta cuando la variación de peso entre los dos últimos pesajes supera el 10%."
+    }
+  },
+  {
+    "model": "alertas.reglaalerta",
+    "pk": 4,
+    "fields": {
+      "tipo": "productiva",
+      "subtipo": "sin_pesaje",
+      "activa": true,
+      "umbral_valor": 30.0,
+      "umbral_unidad": "dias",
+      "descripcion": "Genera alerta para animales activos sin pesaje registrado en los últimos 30 días."
+    }
+  },
+  {
+    "model": "alertas.reglaalerta",
+    "pk": 5,
+    "fields": {
+      "tipo": "potrero",
+      "subtipo": "capacidad",
+      "activa": true,
+      "umbral_valor": 90.0,
+      "umbral_unidad": "porcentaje",
+      "descripcion": "Genera alerta cuando la ocupación de un potrero alcanza o supera el 90% de su capacidad máxima."
+    }
+  },
+  {
+    "model": "alertas.reglaalerta",
+    "pk": 6,
+    "fields": {
+      "tipo": "inventario",
+      "subtipo": "sin_potrero",
+      "activa": true,
+      "umbral_valor": 0.0,
+      "umbral_unidad": "activo",
+      "descripcion": "Genera alerta para animales en estado ACTIVO sin potrero asignado."
+    }
+  },
+  {
+    "model": "alertas.reglaalerta",
+    "pk": 7,
+    "fields": {
+      "tipo": "inventario",
+      "subtipo": "borrador",
+      "activa": true,
+      "umbral_valor": 3.0,
+      "umbral_unidad": "dias",
+      "descripcion": "Genera alerta para animales que llevan más de 3 días en estado BORRADOR."
+    }
+  }
+]

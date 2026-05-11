@@ -1,0 +1,122 @@
+{% extends "base/menu_base.html" %}
+{% block title %}Detalle Alerta · VacWeb{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-2 mb-3">
+  <a href="{% url 'alertas:index' %}" class="btn btn-sm btn-outline-secondary">
+    <i class="bi bi-arrow-left"></i>
+  </a>
+  <h4 class="mb-0 fw-semibold">Detalle de Alerta</h4>
+</div>
+
+<div class="row g-3">
+  <div class="col-12 col-lg-7">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <!-- Tipo y estado -->
+        <div class="d-flex align-items-center gap-2 mb-3">
+          {% if alerta.tipo == 'sanitaria' %}
+            <span class="badge fs-6" style="background:#0b6b2b;">Sanitaria</span>
+          {% elif alerta.tipo == 'productiva' %}
+            <span class="badge fs-6 bg-warning text-dark">Productiva</span>
+          {% elif alerta.tipo == 'potrero' %}
+            <span class="badge fs-6 bg-info text-dark">Potrero</span>
+          {% else %}
+            <span class="badge fs-6 bg-secondary">Inventario</span>
+          {% endif %}
+
+          {% if alerta.estado == 'pendiente' %}
+            <span class="badge fs-6 bg-danger">Pendiente</span>
+          {% else %}
+            <span class="badge fs-6 bg-secondary">Atendida</span>
+          {% endif %}
+        </div>
+
+        <!-- Mensaje -->
+        <h6 class="text-muted text-uppercase small mb-1">Descripción</h6>
+        <p class="mb-3">{{ alerta.mensaje }}</p>
+
+        <!-- Fechas -->
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <div class="text-muted small">Fecha objetivo</div>
+            <div class="fw-semibold">
+              {% if alerta.fecha_objetivo %}{{ alerta.fecha_objetivo|date:"d/m/Y" }}{% else %}—{% endif %}
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="text-muted small">Generada</div>
+            <div class="fw-semibold">{{ alerta.fecha_generacion|date:"d/m/Y H:i" }}</div>
+          </div>
+        </div>
+
+        <!-- Origen -->
+        <div class="mb-3">
+          <div class="text-muted small">Origen</div>
+          <div>{{ alerta.origen }}</div>
+        </div>
+
+        <!-- Animal vinculado -->
+        {% if animal %}
+        <div class="mb-3">
+          <div class="text-muted small mb-1">Animal vinculado</div>
+          <a href="{% url 'animals:detail' animal.pk %}"
+             class="d-flex align-items-center gap-2 text-decoration-none text-dark border rounded p-2">
+            <i class="bi bi-tag fs-5" style="color:#0b6b2b;"></i>
+            <div>
+              <div class="fw-semibold">{{ animal.nombre|default:animal.rfid|default:"Sin ID" }}</div>
+              <div class="small text-muted">{{ animal.get_etapa_display|default:"—" }} · {{ animal.get_estado_display }}</div>
+            </div>
+            <i class="bi bi-chevron-right ms-auto text-muted"></i>
+          </a>
+        </div>
+        {% endif %}
+
+        <!-- Info atención si atendida -->
+        {% if alerta.estado == 'atendida' %}
+        <hr>
+        <h6 class="text-muted text-uppercase small mb-2">Atención</h6>
+        <div class="row g-2">
+          <div class="col-6">
+            <div class="text-muted small">Atendida por</div>
+            <div>{{ alerta.atendida_por.get_full_name|default:alerta.atendida_por.username }}</div>
+          </div>
+          <div class="col-6">
+            <div class="text-muted small">Fecha atención</div>
+            <div>{{ alerta.fecha_atencion|date:"d/m/Y H:i" }}</div>
+          </div>
+          {% if alerta.observacion_atencion %}
+          <div class="col-12">
+            <div class="text-muted small">Observación</div>
+            <div>{{ alerta.observacion_atencion }}</div>
+          </div>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel lateral: acción atender -->
+  {% if alerta.estado == 'pendiente' and 'alertas.atender_alertas' in user_perms %}
+  <div class="col-12 col-lg-5">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <h6 class="fw-semibold mb-3">Marcar como Atendida</h6>
+        <form method="post" action="{% url 'alertas:atender' alerta.id_alerta %}">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label small text-muted">Observación (opcional)</label>
+            <textarea name="observacion" class="form-control" rows="4"
+                      placeholder="Describe la acción tomada..."></textarea>
+          </div>
+          <button type="submit" class="btn w-100 text-white" style="background:#0b6b2b;">
+            <i class="bi bi-check-circle me-1"></i>Confirmar atención
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
