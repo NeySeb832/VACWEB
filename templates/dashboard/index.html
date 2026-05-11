@@ -5,406 +5,668 @@
 
 {% block extra_head %}
 <style>
-  .kpi-card {
-    border-radius: 1rem;
-    border: 1px solid var(--gp-line);
-    background: #fff;
-    padding: 1.25rem 1.5rem;
-    text-decoration: none;
-    color: inherit;
-    display: block;
-    transition: box-shadow .15s, transform .15s;
-    height: 100%;
-  }
-  .kpi-card:hover {
-    box-shadow: 0 4px 18px rgba(0,0,0,.08);
-    transform: translateY(-2px);
-    color: inherit;
-  }
-  .kpi-icon {
-    width: 2.6rem;
-    height: 2.6rem;
-    border-radius: .75rem;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.2rem;
-  }
-  .kpi-value {
-    font-size: 2rem;
-    font-weight: 700;
-    line-height: 1.1;
-    color: var(--gp-ink);
-  }
-  .kpi-label {
-    font-size: .78rem;
-    color: var(--gp-muted);
-    margin-top: .15rem;
-  }
-  .kpi-trend {
-    font-size: .75rem;
-    font-weight: 500;
-  }
-  .kpi-trend.up   { color: #16a34a; }
-  .kpi-trend.down { color: #dc2626; }
-  .kpi-trend.neutral { color: var(--gp-muted); }
+  /* ── Dash ocupa el contenido sin scroll de página ── */
+  .app-content { overflow: hidden !important; }
 
-  .section-card {
-    border-radius: 1rem;
-    border: 1px solid var(--gp-line);
-    background: #fff;
-    overflow: hidden;
+  .dash-root {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 60px - 2.9rem);   /* topbar 60px + padding 1.4+1.5 */
+    gap: .6rem;
   }
-  .section-header {
-    padding: .9rem 1.25rem;
-    border-bottom: 1px solid var(--gp-line);
+
+  /* ════════════════════ CABECERA ════════════════════ */
+  .dash-header {
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    font-weight: 600;
-    font-size: .9rem;
   }
-  .activity-item {
+  .dash-header h5 {
+    font-size: .98rem; font-weight: 700;
+    letter-spacing: -.02em; margin: 0;
+  }
+  .dash-ts {
+    font-size: .72rem; color: var(--gp-muted);
+    display: flex; align-items: center; gap: .3rem;
+  }
+
+  /* ════════════════════ KPI STRIP ════════════════════ */
+  .kpi-strip {
+    flex-shrink: 0;
     display: flex;
-    align-items: flex-start;
-    gap: .85rem;
-    padding: .75rem 1.25rem;
+    align-items: center;
+    gap: .4rem;
+  }
+  .kpi-scroll-wrap { flex: 1; overflow: hidden; }
+  .kpi-scroll {
+    display: flex; gap: .6rem;
+    overflow-x: auto; scroll-snap-type: x mandatory;
+    scrollbar-width: none; padding-bottom: 2px;
+  }
+  .kpi-scroll::-webkit-scrollbar { display: none; }
+  .kpi-slide { flex: 0 0 152px; scroll-snap-align: start; }
+
+  .kpi-card {
+    border-radius: var(--r-lg);
+    border: 1px solid var(--gp-line);
+    background: var(--bg-surface);
+    padding: .9rem 1rem;
+    text-decoration: none; color: inherit; display: block;
+    height: 100%;
+    transition: box-shadow var(--t-base) var(--ease-out),
+                transform var(--t-base) var(--ease-out),
+                border-color var(--t-base) var(--ease-out);
+    position: relative; overflow: hidden;
+  }
+  /* Accent bar izquierda */
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 12px; bottom: 12px;
+    width: 3px; border-radius: 0 3px 3px 0;
+    transition: height var(--t-base);
+  }
+  .kpi-card:hover {
+    box-shadow: var(--gp-shadow);
+    transform: translateY(-2px);
+    border-color: #d1d5db;
+  }
+
+  /* Colores por KPI */
+  .kpi-animals::before  { background: #3b82f6; }
+  .kpi-weight::before   { background: #06b6d4; }
+  .kpi-potreros::before { background: #10b981; }
+  .kpi-alerts::before   { background: #ef4444; }
+  .kpi-tx::before       { background: #f59e0b; }
+  .kpi-sanity::before   { background: #8b5cf6; }
+
+  .kpi-icon {
+    width: 2rem; height: 2rem; border-radius: var(--r-sm);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: .9rem; flex-shrink: 0;
+    margin-bottom: .55rem;
+  }
+  .kpi-value {
+    font-size: 1.7rem; font-weight: 800; line-height: 1;
+    color: var(--gp-ink); letter-spacing: -.03em;
+    font-variant-numeric: tabular-nums;
+  }
+  .kpi-label { font-size: .68rem; color: var(--gp-muted); margin-top: .25rem; font-weight: 500; }
+  .kpi-trend { font-size: .68rem; font-weight: 600; display: flex; align-items: center; gap: .1rem; }
+  .kpi-trend.up      { color: #16a34a; }
+  .kpi-trend.down    { color: #dc2626; }
+  .kpi-trend.neutral { color: var(--gp-muted-2); }
+
+  /* ════════════════════ FILA CENTRAL ════════════════════ */
+  .panels-row {
+    flex: 1; display: flex; gap: .6rem; min-height: 0;
+  }
+
+  .panel-card {
+    border-radius: var(--r-lg);
+    border: 1px solid var(--gp-line);
+    background: var(--bg-surface);
+    display: flex; flex-direction: column; min-height: 0;
+    box-shadow: var(--gp-shadow-xs);
+    overflow: hidden;
+  }
+  .panel-hdr {
+    flex-shrink: 0;
+    padding: .6rem .9rem;
     border-bottom: 1px solid var(--gp-line);
-    text-decoration: none;
-    color: inherit;
-    transition: background .1s;
+    display: flex; align-items: center; justify-content: space-between;
+    font-weight: 600; font-size: .82rem; gap: .5rem;
+  }
+  .panel-hdr .panel-title { display: flex; align-items: center; gap: .4rem; }
+  .panel-hdr .panel-actions { display: flex; align-items: center; gap: .3rem; }
+  .panel-body {
+    flex: 1; overflow-y: auto; overflow-x: hidden;
+    scrollbar-width: thin; scrollbar-color: #e5e7eb transparent;
+  }
+  .panel-body::-webkit-scrollbar { width: 3px; }
+  .panel-body::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
+
+  /* ── Botones de slider ── */
+  .sl-btn {
+    width: 24px; height: 24px; border-radius: 50%;
+    border: 1px solid var(--gp-line); background: var(--bg-surface);
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: .62rem; color: var(--gp-muted-2); flex-shrink: 0;
+    transition: background var(--t-fast), color var(--t-fast), border-color var(--t-fast);
+    padding: 0;
+  }
+  .sl-btn:hover:not(:disabled) {
+    background: var(--gp-green-soft);
+    border-color: var(--gp-green-pill);
+    color: var(--gp-green);
+  }
+  .sl-btn:disabled { opacity: .3; cursor: default; }
+
+  /* ── Ítems de alertas ── */
+  .alerta-item {
+    display: flex; align-items: center; gap: .6rem;
+    padding: .55rem .9rem;
+    border-bottom: 1px solid var(--gp-line-2);
+    transition: background var(--t-fast);
+  }
+  .alerta-item:last-child { border-bottom: none; }
+  .alerta-item:hover { background: #fef9f0; }
+
+  .badge-tipo {
+    font-size: .62rem; border-radius: var(--r-pill);
+    padding: .16rem .5rem; font-weight: 600;
+    text-transform: capitalize; white-space: nowrap; flex-shrink: 0;
+  }
+  .alerta-msg {
+    font-size: .81rem; flex: 1; overflow: hidden;
+    white-space: nowrap; text-overflow: ellipsis;
+  }
+  .alerta-date { font-size: .67rem; color: var(--gp-muted); white-space: nowrap; }
+
+  /* ── Ítems de actividad ── */
+  .activity-item {
+    display: flex; align-items: flex-start; gap: .65rem;
+    padding: .55rem .9rem;
+    border-bottom: 1px solid var(--gp-line-2);
+    text-decoration: none; color: inherit;
+    transition: background var(--t-fast);
   }
   .activity-item:last-child { border-bottom: none; }
   .activity-item:hover { background: var(--gp-green-soft); }
-  .activity-icon {
-    width: 2rem;
-    height: 2rem;
-    border-radius: .5rem;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    font-size: .9rem;
-  }
-  .alerta-item {
-    display: flex;
-    align-items: center;
-    gap: .75rem;
-    padding: .7rem 1.25rem;
-    border-bottom: 1px solid var(--gp-line);
-  }
-  .alerta-item:last-child { border-bottom: none; }
-  .badge-tipo {
-    font-size: .68rem;
-    border-radius: 999px;
-    padding: .2rem .6rem;
-    font-weight: 600;
-    text-transform: capitalize;
-  }
-  .progress { height: 8px; border-radius: 999px; }
-  .potrero-row {
-    padding: .75rem 1.25rem;
-    border-bottom: 1px solid var(--gp-line);
-  }
-  .potrero-row:last-child { border-bottom: none; }
 
-  /* Estado vacío */
-  .empty-state {
-    text-align: center;
-    padding: 3rem 2rem;
-    color: var(--gp-muted);
+  .activity-icon {
+    width: 1.9rem; height: 1.9rem; border-radius: var(--r-sm);
+    display: inline-flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: .82rem; margin-top: .05rem;
   }
-  .empty-state i {
-    font-size: 3.5rem;
-    color: var(--gp-green-pill);
-    display: block;
-    margin-bottom: 1rem;
+  .activity-desc {
+    font-size: .81rem; font-weight: 500;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    max-width: 100%;
+  }
+  .activity-meta { font-size: .68rem; color: var(--gp-muted); margin-top: .05rem; }
+
+  /* ════════════════════ POTREROS STRIP ════════════════════ */
+  .pot-strip {
+    flex-shrink: 0;
+    display: flex; align-items: stretch; gap: .4rem;
+    height: 136px;
+  }
+  .pot-label-card {
+    flex: 0 0 auto; min-width: 120px;
+    border-radius: var(--r-lg); border: 1px solid var(--gp-line);
+    background: var(--bg-surface); box-shadow: var(--gp-shadow-xs);
+    padding: .7rem .9rem;
+    display: flex; flex-direction: column; justify-content: space-between;
+  }
+  .pot-scroll-wrap { flex: 1; overflow: hidden; }
+  .pot-scroll {
+    display: flex; gap: .6rem;
+    overflow-x: auto; scroll-snap-type: x mandatory;
+    scrollbar-width: none; height: 100%;
+  }
+  .pot-scroll::-webkit-scrollbar { display: none; }
+
+  .pot-card {
+    flex: 0 0 190px; scroll-snap-align: start;
+    border-radius: var(--r-lg); border: 1px solid var(--gp-line);
+    background: var(--bg-surface); box-shadow: var(--gp-shadow-xs);
+    padding: .7rem .9rem;
+    display: flex; flex-direction: column; justify-content: space-between;
+    text-decoration: none; color: inherit;
+    transition: box-shadow var(--t-base), border-color var(--t-base);
+  }
+  .pot-card:hover {
+    box-shadow: var(--gp-shadow);
+    border-color: #d1d5db;
+    color: inherit;
+  }
+  .pot-name {
+    font-size: .82rem; font-weight: 600;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .pot-animals { font-size: .68rem; color: var(--gp-muted); margin-top: .1rem; }
+  .pot-pct { font-size: .82rem; font-weight: 700; }
+  .progress { height: 6px; border-radius: var(--r-pill); background: var(--gp-line-2); }
+  .progress-bar { border-radius: var(--r-pill); transition: width 1.2s cubic-bezier(.4,0,.2,1); }
+
+  /* ════════════════════ EMPTY STATE ════════════════════ */
+  .empty-state {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; height: 100%; padding: 2rem 1.5rem;
+    color: var(--gp-muted); text-align: center;
+  }
+  .empty-state i { font-size: 2.2rem; margin-bottom: .65rem; opacity: .6; }
+
+  /* ════════════════════ RESPONSIVE ════════════════════ */
+  @media (max-width: 991px) {
+    .app-content { overflow: auto !important; }
+    .dash-root { height: auto; }
+    .panels-row { flex-direction: column; }
+    .pot-strip { height: auto; overflow-x: auto; }
+    .pot-card { flex: 0 0 160px; }
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<!-- Cabecera -->
-<div class="d-flex align-items-center justify-content-between mb-4">
-  <div>
-    <h5 class="mb-0 fw-700">Dashboard</h5>
-    <small class="text-muted">Resumen general de la operación ganadera</small>
-  </div>
-  <span class="text-muted" style="font-size:.8rem;">
-    <i class="bi bi-clock me-1"></i>Actualizado: {{ now|date:"d/m/Y H:i" }}
-  </span>
-</div>
+<div class="dash-root">
 
-{% if sin_datos %}
-<!-- ── Estado vacío (finca nueva) ── -->
-<div class="section-card">
-  <div class="empty-state">
-    <i class="bi bi-box"></i>
-    <h5 class="fw-600 mb-2">No hay datos registrados aún</h5>
-    <p class="mb-4">Comience registrando sus potreros y animales para ver los indicadores.</p>
-    <div class="d-flex gap-3 justify-content-center flex-wrap">
-      <a href="{% url 'potreros:create' %}" class="btn btn-outline-success">
-        <i class="bi bi-grid-3x3-gap me-1"></i>Crear primer potrero
-      </a>
-      <a href="{% url 'animals:create' %}" class="btn btn-success">
-        <i class="bi bi-tag me-1"></i>Registrar primer animal
-      </a>
+  <!-- ── Cabecera ── -->
+  <div class="dash-header">
+    <div>
+      <h5>Dashboard</h5>
+      <small class="text-muted" style="font-size:.72rem;">Resumen operativo del hato ganadero</small>
+    </div>
+    <div class="dash-ts">
+      <i class="bi bi-clock"></i>
+      <span id="dash-ts">{{ now|date:"d/m/Y H:i" }}</span>
     </div>
   </div>
-</div>
 
-{% else %}
-
-<!-- ── Fila de KPIs ── -->
-{% if error_kpis %}
-<div class="alert alert-warning mb-4">
-  <i class="bi bi-exclamation-triangle me-2"></i>
-  No se pudieron cargar algunos indicadores. Reintente en unos momentos.
-</div>
-{% endif %}
-
-{% if kpis %}
-<div class="row g-3 mb-4">
-
-  <!-- Animales Activos -->
-  <div class="col-6 col-md-4 col-xl-2">
-    <a href="{% url kpis.animales_activos.url_nombre %}" class="kpi-card">
-      <div class="d-flex align-items-center justify-content-between mb-2">
-        <div class="kpi-icon bg-primary bg-opacity-10 text-primary">
-          <i class="{{ kpis.animales_activos.icono }}"></i>
-        </div>
-        <span class="kpi-trend neutral">—</span>
+  {% if sin_datos %}
+  <!-- ── Sin datos ── -->
+  <div class="panel-card" style="flex:1;">
+    <div class="empty-state">
+      <i class="bi bi-box2"></i>
+      <h6 class="fw-semibold mb-1" style="font-size:.95rem;">Sin datos registrados</h6>
+      <p class="mb-3" style="font-size:.82rem;">Comienza registrando tus potreros y animales.</p>
+      <div class="d-flex gap-2 flex-wrap justify-content-center">
+        <a href="{% url 'potreros:create' %}" class="btn btn-sm btn-outline-success btn-pill">
+          <i class="bi bi-grid-3x3-gap me-1"></i>Crear potrero
+        </a>
+        <a href="{% url 'animals:create' %}" class="btn btn-sm btn-success btn-pill">
+          <i class="bi bi-tag me-1"></i>Registrar animal
+        </a>
       </div>
-      <div class="kpi-value">{{ kpis.animales_activos.valor }}</div>
-      <div class="kpi-label">{{ kpis.animales_activos.titulo }}</div>
-    </a>
+    </div>
   </div>
 
-  <!-- Peso Promedio -->
-  <div class="col-6 col-md-4 col-xl-2">
-    <a href="{% url kpis.peso_promedio.url_nombre %}" class="kpi-card">
-      <div class="d-flex align-items-center justify-content-between mb-2">
-        <div class="kpi-icon bg-info bg-opacity-10 text-info">
-          <i class="{{ kpis.peso_promedio.icono }}"></i>
-        </div>
-        {% if kpis.peso_promedio.variacion %}
-          {% if kpis.peso_promedio.variacion.positivo %}
-            <span class="kpi-trend up"><i class="bi bi-arrow-up-short"></i>{{ kpis.peso_promedio.variacion.delta }} kg</span>
-          {% else %}
-            <span class="kpi-trend down"><i class="bi bi-arrow-down-short"></i>{{ kpis.peso_promedio.variacion.delta_abs }} kg</span>
-          {% endif %}
-        {% else %}
-          <span class="kpi-trend neutral">—</span>
-        {% endif %}
-      </div>
-      <div class="kpi-value">{{ kpis.peso_promedio.valor }}</div>
-      <div class="kpi-label">{{ kpis.peso_promedio.titulo }} (kg)</div>
-    </a>
-  </div>
+  {% else %}
 
-  <!-- Ocupación Potreros -->
-  <div class="col-6 col-md-4 col-xl-2">
-    <a href="{% url kpis.ocupacion_potreros.url_nombre %}" class="kpi-card">
-      <div class="d-flex align-items-center justify-content-between mb-2">
-        <div class="kpi-icon bg-success bg-opacity-10 text-success">
-          <i class="{{ kpis.ocupacion_potreros.icono }}"></i>
-        </div>
-        <span class="kpi-trend neutral">—</span>
-      </div>
-      <div class="kpi-value">{{ kpis.ocupacion_potreros.valor }}</div>
-      <div class="kpi-label">{{ kpis.ocupacion_potreros.titulo }} (%)</div>
-    </a>
-  </div>
+  <!-- ── KPI Strip ── -->
+  {% if kpis %}
+  <div class="kpi-strip">
+    <button class="sl-btn" id="kpi-prev" onclick="scrollStrip('kpi-scroll',-1)">
+      <i class="bi bi-chevron-left"></i>
+    </button>
+    <div class="kpi-scroll-wrap">
+      <div class="kpi-scroll" id="kpi-scroll">
 
-  <!-- Alertas Pendientes -->
-  <div class="col-6 col-md-4 col-xl-2">
-    <a href="{% url kpis.alertas_pendientes.url_nombre %}" class="kpi-card">
-      <div class="d-flex align-items-center justify-content-between mb-2">
-        <div class="kpi-icon bg-danger bg-opacity-10 text-danger">
-          <i class="{{ kpis.alertas_pendientes.icono }}"></i>
-        </div>
-        <span class="kpi-trend neutral">—</span>
-      </div>
-      <div class="kpi-value {% if kpis.alertas_pendientes.valor > 0 %}text-danger{% endif %}">
-        {{ kpis.alertas_pendientes.valor }}
-      </div>
-      <div class="kpi-label">{{ kpis.alertas_pendientes.titulo }}</div>
-    </a>
-  </div>
-
-  <!-- Transacciones del Mes -->
-  <div class="col-6 col-md-4 col-xl-2">
-    <a href="{% url kpis.transacciones_mes.url_nombre %}" class="kpi-card">
-      <div class="d-flex align-items-center justify-content-between mb-2">
-        <div class="kpi-icon bg-warning bg-opacity-10 text-warning">
-          <i class="{{ kpis.transacciones_mes.icono }}"></i>
-        </div>
-        {% if kpis.transacciones_mes.variacion %}
-          {% if kpis.transacciones_mes.variacion.positivo %}
-            <span class="kpi-trend up"><i class="bi bi-arrow-up-short"></i>{{ kpis.transacciones_mes.variacion.delta }}</span>
-          {% else %}
-            <span class="kpi-trend down"><i class="bi bi-arrow-down-short"></i>{{ kpis.transacciones_mes.variacion.delta_abs }}</span>
-          {% endif %}
-        {% else %}
-          <span class="kpi-trend neutral">—</span>
-        {% endif %}
-      </div>
-      <div class="kpi-value">{{ kpis.transacciones_mes.valor }}</div>
-      <div class="kpi-label">{{ kpis.transacciones_mes.titulo }}</div>
-    </a>
-  </div>
-
-  <!-- Cumplimiento Sanitario -->
-  <div class="col-6 col-md-4 col-xl-2">
-    <a href="{% url kpis.cumplimiento_sanitario.url_nombre %}" class="kpi-card">
-      <div class="d-flex align-items-center justify-content-between mb-2">
-        <div class="kpi-icon bg-success bg-opacity-10 text-success">
-          <i class="{{ kpis.cumplimiento_sanitario.icono }}"></i>
-        </div>
-        {% if kpis.cumplimiento_sanitario.variacion %}
-          {% if kpis.cumplimiento_sanitario.variacion.positivo %}
-            <span class="kpi-trend up"><i class="bi bi-arrow-up-short"></i>{{ kpis.cumplimiento_sanitario.variacion.delta }}%</span>
-          {% else %}
-            <span class="kpi-trend down"><i class="bi bi-arrow-down-short"></i>{{ kpis.cumplimiento_sanitario.variacion.delta_abs }}%</span>
-          {% endif %}
-        {% else %}
-          <span class="kpi-trend neutral">—</span>
-        {% endif %}
-      </div>
-      <div class="kpi-value">{{ kpis.cumplimiento_sanitario.valor }}</div>
-      <div class="kpi-label">{{ kpis.cumplimiento_sanitario.titulo }} (%)</div>
-    </a>
-  </div>
-
-</div>
-{% endif %}
-
-<!-- ── Fila central: Alertas + Actividad Reciente ── -->
-<div class="row g-3 mb-4">
-
-  <!-- Alertas urgentes -->
-  <div class="col-12 col-lg-5">
-    <div class="section-card h-100">
-      <div class="section-header">
-        <span><i class="bi bi-bell-fill text-danger me-2"></i>Alertas y Notificaciones</span>
-        <a href="{% url 'alertas:index' %}" class="btn btn-sm btn-outline-secondary">Ver todas</a>
-      </div>
-      {% if alertas_urgentes %}
-        {% for alerta in alertas_urgentes %}
-        <div class="alerta-item">
-          <span class="badge-tipo
-            {% if alerta.tipo == 'sanitaria' %}bg-warning text-dark
-            {% elif alerta.tipo == 'productiva' %}bg-info text-dark
-            {% elif alerta.tipo == 'potrero' %}bg-success text-white
-            {% else %}bg-secondary text-white{% endif %}">
-            {{ alerta.tipo }}
-          </span>
-          <div class="flex-grow-1 overflow-hidden">
-            <div class="text-truncate" style="font-size:.85rem; max-width:220px;" title="{{ alerta.mensaje }}">
-              {{ alerta.mensaje }}
+        <!-- Animales Activos -->
+        <div class="kpi-slide">
+          <a href="{% url kpis.animales_activos.url_nombre %}" class="kpi-card kpi-animals">
+            <div class="kpi-icon bg-primary bg-opacity-10 text-primary">
+              <i class="{{ kpis.animales_activos.icono }}"></i>
             </div>
-            {% if alerta.fecha_objetivo %}
-            <div style="font-size:.72rem; color:var(--gp-muted);">
-              Objetivo: {{ alerta.fecha_objetivo|date:"d/m/Y" }}
-            </div>
-            {% endif %}
-          </div>
-          <a href="{% url 'alertas:detalle' alerta.pk %}" class="btn btn-sm btn-outline-danger ms-auto" style="white-space:nowrap;">
-            Atender
+            <div class="kpi-value" data-count="{{ kpis.animales_activos.valor }}">{{ kpis.animales_activos.valor }}</div>
+            <div class="kpi-label">{{ kpis.animales_activos.titulo }}</div>
+            <div class="kpi-trend neutral mt-1">—</div>
           </a>
         </div>
-        {% endfor %}
-      {% else %}
-        <div class="empty-state py-4">
-          <i class="bi bi-check-circle-fill text-success" style="font-size:2rem;"></i>
-          <p class="mt-2 mb-0 text-muted" style="font-size:.9rem;">Sin alertas pendientes</p>
-        </div>
-      {% endif %}
-    </div>
-  </div>
 
-  <!-- Actividad Reciente -->
-  <div class="col-12 col-lg-7">
-    <div class="section-card h-100">
-      <div class="section-header">
-        <span><i class="bi bi-clock-history me-2 text-secondary"></i>Actividad Reciente</span>
+        <!-- Peso Promedio -->
+        <div class="kpi-slide">
+          <a href="{% url kpis.peso_promedio.url_nombre %}" class="kpi-card kpi-weight">
+            <div class="kpi-icon" style="background:#e0f7fa;color:#0097a7;">
+              <i class="{{ kpis.peso_promedio.icono }}"></i>
+            </div>
+            <div class="kpi-value" data-count="{{ kpis.peso_promedio.valor }}" data-float="1">{{ kpis.peso_promedio.valor }}</div>
+            <div class="kpi-label">{{ kpis.peso_promedio.titulo }} (kg)</div>
+            <div class="kpi-trend mt-1
+              {% if kpis.peso_promedio.variacion %}{% if kpis.peso_promedio.variacion.positivo %}up{% else %}down{% endif %}{% else %}neutral{% endif %}">
+              {% if kpis.peso_promedio.variacion %}
+                {% if kpis.peso_promedio.variacion.positivo %}
+                  <i class="bi bi-arrow-up-short"></i>{{ kpis.peso_promedio.variacion.delta }} kg
+                {% else %}
+                  <i class="bi bi-arrow-down-short"></i>{{ kpis.peso_promedio.variacion.delta_abs }} kg
+                {% endif %}
+              {% else %}—{% endif %}
+            </div>
+          </a>
+        </div>
+
+        <!-- Ocupación Potreros -->
+        <div class="kpi-slide">
+          <a href="{% url kpis.ocupacion_potreros.url_nombre %}" class="kpi-card kpi-potreros">
+            <div class="kpi-icon bg-success bg-opacity-10 text-success">
+              <i class="{{ kpis.ocupacion_potreros.icono }}"></i>
+            </div>
+            <div class="kpi-value" data-count="{{ kpis.ocupacion_potreros.valor }}">{{ kpis.ocupacion_potreros.valor }}</div>
+            <div class="kpi-label">{{ kpis.ocupacion_potreros.titulo }} (%)</div>
+            <div class="kpi-trend neutral mt-1">—</div>
+          </a>
+        </div>
+
+        <!-- Alertas Pendientes -->
+        <div class="kpi-slide">
+          <a href="{% url kpis.alertas_pendientes.url_nombre %}" class="kpi-card kpi-alerts">
+            <div class="kpi-icon bg-danger bg-opacity-10 text-danger">
+              <i class="{{ kpis.alertas_pendientes.icono }}"></i>
+            </div>
+            <div class="kpi-value {% if kpis.alertas_pendientes.valor > 0 %}text-danger{% endif %}"
+                 data-count="{{ kpis.alertas_pendientes.valor }}">
+              {{ kpis.alertas_pendientes.valor }}
+            </div>
+            <div class="kpi-label">{{ kpis.alertas_pendientes.titulo }}</div>
+            <div class="kpi-trend neutral mt-1">—</div>
+          </a>
+        </div>
+
+        <!-- Transacciones del Mes -->
+        <div class="kpi-slide">
+          <a href="{% url kpis.transacciones_mes.url_nombre %}" class="kpi-card kpi-tx">
+            <div class="kpi-icon bg-warning bg-opacity-10 text-warning">
+              <i class="{{ kpis.transacciones_mes.icono }}"></i>
+            </div>
+            <div class="kpi-value" data-count="{{ kpis.transacciones_mes.valor }}">{{ kpis.transacciones_mes.valor }}</div>
+            <div class="kpi-label">{{ kpis.transacciones_mes.titulo }}</div>
+            <div class="kpi-trend mt-1
+              {% if kpis.transacciones_mes.variacion %}{% if kpis.transacciones_mes.variacion.positivo %}up{% else %}down{% endif %}{% else %}neutral{% endif %}">
+              {% if kpis.transacciones_mes.variacion %}
+                {% if kpis.transacciones_mes.variacion.positivo %}
+                  <i class="bi bi-arrow-up-short"></i>{{ kpis.transacciones_mes.variacion.delta }}
+                {% else %}
+                  <i class="bi bi-arrow-down-short"></i>{{ kpis.transacciones_mes.variacion.delta_abs }}
+                {% endif %}
+              {% else %}—{% endif %}
+            </div>
+          </a>
+        </div>
+
+        <!-- Cumplimiento Sanitario -->
+        <div class="kpi-slide">
+          <a href="{% url kpis.cumplimiento_sanitario.url_nombre %}" class="kpi-card kpi-sanity">
+            <div class="kpi-icon" style="background:#ede9fe;color:#7c3aed;">
+              <i class="{{ kpis.cumplimiento_sanitario.icono }}"></i>
+            </div>
+            <div class="kpi-value" data-count="{{ kpis.cumplimiento_sanitario.valor }}">{{ kpis.cumplimiento_sanitario.valor }}</div>
+            <div class="kpi-label">{{ kpis.cumplimiento_sanitario.titulo }} (%)</div>
+            <div class="kpi-trend mt-1
+              {% if kpis.cumplimiento_sanitario.variacion %}{% if kpis.cumplimiento_sanitario.variacion.positivo %}up{% else %}down{% endif %}{% else %}neutral{% endif %}">
+              {% if kpis.cumplimiento_sanitario.variacion %}
+                {% if kpis.cumplimiento_sanitario.variacion.positivo %}
+                  <i class="bi bi-arrow-up-short"></i>{{ kpis.cumplimiento_sanitario.variacion.delta }}%
+                {% else %}
+                  <i class="bi bi-arrow-down-short"></i>{{ kpis.cumplimiento_sanitario.variacion.delta_abs }}%
+                {% endif %}
+              {% else %}—{% endif %}
+            </div>
+          </a>
+        </div>
+
       </div>
-      {% if actividad %}
-        {% for item in actividad %}
-        <a href="{{ item.url }}" class="activity-item">
-          <div class="activity-icon
-            {% if item.color == 'primary' %}bg-primary bg-opacity-10 text-primary
-            {% elif item.color == 'success' %}bg-success bg-opacity-10 text-success
-            {% elif item.color == 'warning' %}bg-warning bg-opacity-10 text-warning
-            {% else %}bg-secondary bg-opacity-10 text-secondary{% endif %}">
-            <i class="{{ item.icono }}"></i>
-          </div>
-          <div class="flex-grow-1 overflow-hidden">
-            <div style="font-size:.85rem; font-weight:500;" class="text-truncate">
-              {{ item.descripcion }}
-            </div>
-            <div style="font-size:.75rem; color:var(--gp-muted);">
-              {% if item.animal %}
-                <i class="bi bi-tag me-1"></i>{{ item.animal.nombre|default:item.animal.rfid }}
-                &nbsp;·&nbsp;
-              {% endif %}
-              {{ item.fecha|date:"d/m/Y H:i" }}
-              {% if item.usuario %}
-                &nbsp;·&nbsp;{{ item.usuario.get_full_name|default:item.usuario.username }}
-              {% endif %}
-            </div>
-          </div>
-          <span class="badge bg-light text-muted ms-2" style="font-size:.7rem; white-space:nowrap;">
-            {{ item.tipo }}
-          </span>
-        </a>
-        {% endfor %}
-      {% else %}
-        <div class="empty-state py-4">
-          <i class="bi bi-inbox" style="font-size:2rem;"></i>
-          <p class="mt-2 mb-0 text-muted" style="font-size:.9rem;">Sin actividad reciente</p>
-        </div>
-      {% endif %}
     </div>
+    <button class="sl-btn" id="kpi-next" onclick="scrollStrip('kpi-scroll', 1)">
+      <i class="bi bi-chevron-right"></i>
+    </button>
+  </div>
+  {% endif %}
+
+  <!-- ── Fila central ── -->
+  <div class="panels-row">
+
+    <!-- Alertas -->
+    <div class="panel-card" style="flex:0 0 37%;">
+      <div class="panel-hdr">
+        <div class="panel-title">
+          <i class="bi bi-bell-fill text-danger" style="font-size:.85rem;"></i>
+          <span>Alertas</span>
+          {% if alertas_urgentes %}
+          <span class="badge rounded-pill bg-danger" style="font-size:.6rem;">{{ alertas_urgentes|length }}</span>
+          {% endif %}
+        </div>
+        <div class="panel-actions">
+          <button class="sl-btn" onclick="scrollPanel('alertas-body',-1)"><i class="bi bi-chevron-up"></i></button>
+          <button class="sl-btn" onclick="scrollPanel('alertas-body', 1)"><i class="bi bi-chevron-down"></i></button>
+          <a href="{% url 'alertas:index' %}" class="btn btn-sm btn-outline-secondary btn-pill ms-1"
+             style="font-size:.68rem; padding:.18rem .6rem;">Ver todas</a>
+        </div>
+      </div>
+      <div class="panel-body" id="alertas-body">
+        {% if alertas_urgentes %}
+          {% for alerta in alertas_urgentes %}
+          <div class="alerta-item">
+            <span class="badge-tipo
+              {% if alerta.tipo == 'sanitaria' %}bg-warning text-dark
+              {% elif alerta.tipo == 'productiva' %}bg-info text-dark
+              {% elif alerta.tipo == 'potrero' %}bg-success text-white
+              {% else %}bg-secondary text-white{% endif %}">
+              {{ alerta.tipo }}
+            </span>
+            <div class="alerta-msg" title="{{ alerta.mensaje }}">{{ alerta.mensaje }}</div>
+            {% if alerta.fecha_objetivo %}
+            <div class="alerta-date">{{ alerta.fecha_objetivo|date:"d/m" }}</div>
+            {% endif %}
+            <a href="{% url 'alertas:detalle' alerta.pk %}"
+               class="btn btn-sm btn-outline-danger btn-pill ms-1"
+               style="font-size:.66rem; padding:.16rem .55rem; white-space:nowrap; flex-shrink:0;">
+              Atender
+            </a>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty-state">
+            <i class="bi bi-check-circle-fill text-success"></i>
+            <p class="mb-0" style="font-size:.82rem; font-weight:500;">Sin alertas pendientes</p>
+            <p class="mt-1 mb-0" style="font-size:.72rem;">Todo está en orden</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Actividad Reciente -->
+    <div class="panel-card" style="flex:1;">
+      <div class="panel-hdr">
+        <div class="panel-title">
+          <i class="bi bi-clock-history text-secondary" style="font-size:.85rem;"></i>
+          <span>Actividad Reciente</span>
+        </div>
+        <div class="panel-actions">
+          <button class="sl-btn" onclick="scrollPanel('actividad-body',-1)"><i class="bi bi-chevron-up"></i></button>
+          <button class="sl-btn" onclick="scrollPanel('actividad-body', 1)"><i class="bi bi-chevron-down"></i></button>
+        </div>
+      </div>
+      <div class="panel-body" id="actividad-body">
+        {% if actividad %}
+          {% for item in actividad %}
+          <a href="{{ item.url }}" class="activity-item">
+            <div class="activity-icon
+              {% if item.color == 'primary' %}bg-primary bg-opacity-10 text-primary
+              {% elif item.color == 'success' %}bg-success bg-opacity-10 text-success
+              {% elif item.color == 'warning' %}bg-warning bg-opacity-10 text-warning
+              {% else %}bg-secondary bg-opacity-10 text-secondary{% endif %}">
+              <i class="{{ item.icono }}"></i>
+            </div>
+            <div class="flex-grow-1 overflow-hidden">
+              <div class="activity-desc">{{ item.descripcion }}</div>
+              <div class="activity-meta">
+                {% if item.animal %}<i class="bi bi-tag me-1"></i>{{ item.animal.nombre|default:item.animal.rfid }} ·{% endif %}
+                {{ item.fecha|date:"d/m H:i" }}
+                {% if item.usuario %} · {{ item.usuario.get_full_name|default:item.usuario.username }}{% endif %}
+              </div>
+            </div>
+            <span class="badge bg-light text-muted" style="font-size:.65rem; white-space:nowrap; flex-shrink:0;">
+              {{ item.tipo }}
+            </span>
+          </a>
+          {% endfor %}
+        {% else %}
+          <div class="empty-state">
+            <i class="bi bi-inbox"></i>
+            <p class="mb-0" style="font-size:.82rem; font-weight:500;">Sin actividad reciente</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
   </div>
 
-</div>
+  <!-- ── Potreros Strip ── -->
+  {% if potreros_ocupacion %}
+  <div class="pot-strip">
 
-<!-- ── Ocupación de Lotes ── -->
-{% if potreros_ocupacion %}
-<div class="section-card mb-4">
-  <div class="section-header">
-    <span><i class="bi bi-grid-3x3-gap me-2 text-success"></i>Ocupación de Lotes / Potreros</span>
-    <a href="{% url 'potreros:list' %}" class="btn btn-sm btn-outline-secondary">Ver todos</a>
-  </div>
-  {% for item in potreros_ocupacion %}
-  <div class="potrero-row">
-    <div class="d-flex align-items-center justify-content-between mb-1">
+    <!-- Label card -->
+    <div class="pot-label-card">
       <div>
-        <a href="{% url 'potreros:detail' item.potrero.pk %}" class="text-decoration-none fw-500" style="font-size:.88rem;">
-          {{ item.potrero.nombre_codigo }}
-        </a>
-        <span class="text-muted ms-2" style="font-size:.77rem;">
-          {{ item.activos }} / {{ item.potrero.capacidad_maxima }} animales
-        </span>
+        <div style="font-size:.62rem; text-transform:uppercase; letter-spacing:.08em; color:var(--gp-muted); font-weight:600;">
+          Potreros
+        </div>
+        <div style="font-size:1.5rem; font-weight:800; line-height:1; margin-top:.2rem; letter-spacing:-.04em;">
+          {{ potreros_ocupacion|length }}
+        </div>
       </div>
-      <span class="fw-600" style="font-size:.85rem; min-width:3rem; text-align:right;">
-        {{ item.pct }}%
-      </span>
+      <a href="{% url 'potreros:list' %}" style="font-size:.7rem; color:var(--gp-green); text-decoration:none; font-weight:600;">
+        Ver todos <i class="bi bi-arrow-right"></i>
+      </a>
     </div>
-    <div class="progress">
-      <div class="progress-bar bg-{{ item.color }}"
-           role="progressbar"
-           style="width: {{ item.pct }}%"
-           aria-valuenow="{{ item.pct }}"
-           aria-valuemin="0"
-           aria-valuemax="100">
-      </div>
-    </div>
-  </div>
-  {% endfor %}
-</div>
-{% endif %}
 
-{% endif %}{# fin if sin_datos #}
+    <button class="sl-btn" onclick="scrollStrip('pot-scroll',-1)" style="align-self:center;">
+      <i class="bi bi-chevron-left"></i>
+    </button>
+
+    <div class="pot-scroll-wrap">
+      <div class="pot-scroll" id="pot-scroll">
+        {% for item in potreros_ocupacion %}
+        <a href="{% url 'potreros:detail' item.potrero.pk %}" class="pot-card">
+          <div>
+            <div class="pot-name" title="{{ item.potrero.nombre_codigo }}">{{ item.potrero.nombre_codigo }}</div>
+            <div class="pot-animals">{{ item.activos }}/{{ item.potrero.capacidad_maxima }} animales</div>
+          </div>
+          <div>
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span style="font-size:.68rem; color:var(--gp-muted);">Ocupación</span>
+              <span class="pot-pct text-{{ item.color }}">{{ item.pct }}%</span>
+            </div>
+            <div class="progress">
+              <div class="progress-bar bg-{{ item.color }}"
+                   role="progressbar"
+                   data-target="{{ item.pct }}"
+                   style="width:0%"
+                   aria-valuenow="{{ item.pct }}"
+                   aria-valuemin="0" aria-valuemax="100">
+              </div>
+            </div>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+
+    <button class="sl-btn" onclick="scrollStrip('pot-scroll', 1)" style="align-self:center;">
+      <i class="bi bi-chevron-right"></i>
+    </button>
+
+  </div>
+  {% endif %}
+
+  {% endif %}{# /sin_datos #}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  "use strict";
+
+  /* ════ CONTADORES ANIMADOS ════ */
+  function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+
+  function animateCount(el) {
+    var raw = el.dataset.count;
+    if (!raw) return;
+    var end      = parseFloat(raw);
+    var isFloat  = el.dataset.float === '1';
+    var decimals = isFloat ? 1 : 0;
+    if (isNaN(end)) return;
+
+    var duration = 1000;
+    var start = performance.now();
+    var startVal = 0;
+
+    function step(now) {
+      var t = Math.min((now - start) / duration, 1);
+      var val = startVal + (end - startVal) * easeOutCubic(t);
+      el.textContent = isFloat
+        ? val.toFixed(decimals)
+        : Math.round(val).toLocaleString('es-CO');
+      if (t < 1) requestAnimationFrame(step);
+      else el.textContent = isFloat ? end.toFixed(decimals) : end.toLocaleString('es-CO');
+    }
+    requestAnimationFrame(step);
+  }
+
+  /* Disparar cuando el elemento es visible */
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) {
+          animateCount(e.target);
+          io.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.3 });
+
+    document.querySelectorAll('[data-count]').forEach(function (el) { io.observe(el); });
+  } else {
+    document.querySelectorAll('[data-count]').forEach(animateCount);
+  }
+
+  /* ════ BARRAS DE PROGRESO ANIMADAS ════ */
+  setTimeout(function () {
+    document.querySelectorAll('.progress-bar[data-target]').forEach(function (bar) {
+      bar.style.width = bar.dataset.target + '%';
+    });
+  }, 300);
+
+  /* ════ SCROLL DE PANELES ════ */
+  window.scrollPanel = function (id, dir) {
+    var el = document.getElementById(id);
+    if (el) el.scrollBy({ top: dir * 88, behavior: 'smooth' });
+  };
+
+  window.scrollStrip = function (id, dir) {
+    var el = document.getElementById(id);
+    if (el) el.scrollBy({ left: dir * 160, behavior: 'smooth' });
+  };
+
+  /* ════ HABILITAR/DESHABILITAR FLECHAS ════ */
+  function syncArrows(scrollEl, prev, next) {
+    if (!scrollEl) return;
+    function upd() {
+      var atStart = scrollEl.scrollLeft <= 2;
+      var atEnd   = scrollEl.scrollLeft + scrollEl.clientWidth >= scrollEl.scrollWidth - 2;
+      if (prev) prev.disabled = atStart;
+      if (next) next.disabled = atEnd;
+    }
+    scrollEl.addEventListener('scroll', upd, { passive: true });
+    upd();
+  }
+
+  var kpiEl   = document.getElementById('kpi-scroll');
+  var potEl   = document.getElementById('pot-scroll');
+  syncArrows(kpiEl,
+    document.getElementById('kpi-prev'),
+    document.getElementById('kpi-next'));
+  if (potEl) {
+    var potBtns = potEl.closest('.pot-strip') && potEl.closest('.pot-strip').querySelectorAll('.sl-btn');
+    if (potBtns && potBtns.length >= 2) syncArrows(potEl, potBtns[0], potBtns[1]);
+  }
+
+  /* ════ RELOJ EN TIEMPO REAL ════ */
+  var tsEl = document.getElementById('dash-ts');
+  if (tsEl) {
+    setInterval(function () {
+      var now = new Date();
+      var pad = function (n) { return n < 10 ? '0' + n : n; };
+      var d   = pad(now.getDate()) + '/' + pad(now.getMonth() + 1) + '/' + now.getFullYear();
+      var t   = pad(now.getHours()) + ':' + pad(now.getMinutes());
+      tsEl.textContent = d + ' ' + t;
+    }, 30000);
+  }
+
+})();
+</script>
 {% endblock %}

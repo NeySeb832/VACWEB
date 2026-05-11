@@ -1,127 +1,408 @@
 {% load static %}
 <!doctype html>
-<html lang="es" data-bs-theme="light">
+<html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>VacWeb· Iniciar sesión</title>
+  <title>VacWeb · Iniciar sesión</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
   <style>
     :root{
-      --gp-green:#0b6b2b;
-      --gp-ov1: rgba(11,107,43,.86);
-      --gp-ov2: rgba(11,107,43,.62);
-      --ink:#0e0f14;
-      --right-bg:#f7f9f7;
+      --green:#0b6b2b; --green-dark:#074e20; --green-mid:#0e8535;
+      --green-soft:#e8f5ec; --ink:#0e1116; --line:#e5e7eb;
+      --muted:#6b7280; --shadow-lg:0 20px 60px rgba(0,0,0,.14),0 6px 20px rgba(0,0,0,.08);
+      --r:12px; --r-pill:999px;
     }
-    html, body {height:100%;}
-    /* usamos 100svh (small viewport units) para evitar cortes */
-    .min-svh-100 {min-height:100svh;}
+    *{box-sizing:border-box;}
+    html,body{height:100%; margin:0;}
+    body{font-family:"Inter",system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
 
-    .hero{
+    /* ── Split layout ── */
+    .auth-wrap{display:flex;min-height:100svh;}
+
+    /* ── LEFT PANEL ── */
+    .auth-left{
+      flex:0 0 52%; max-width:52%;
+      position:relative; overflow:hidden;
       background:
-        linear-gradient(180deg, var(--gp-ov1), var(--gp-ov2)),
+        linear-gradient(160deg, rgba(7,78,32,.92) 0%, rgba(11,107,43,.78) 50%, rgba(14,133,53,.68) 100%),
         url("{% static 'img/hero-ganaderia.jpg' %}") center/cover no-repeat;
+      display:flex; align-items:center; justify-content:center;
+      padding:3rem 3.5rem;
       color:#fff;
     }
-    .brand-badge{
-      width:44px;height:44px;border-radius:12px;
-      display:inline-flex;align-items:center;justify-content:center;
-      background:#e9f7ef;color:var(--gp-green);
-      box-shadow: inset 0 0 0 1px rgba(11,107,43,.12);
+    @media(max-width:991px){.auth-left{display:none;}}
+
+    /* Grain texture */
+    .auth-left::before{
+      content:''; position:absolute; inset:0; pointer-events:none;
+      opacity:.04;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
     }
-    .pill{
-      background: rgba(255,255,255,.10);
-      border:1px solid rgba(255,255,255,.18);
-      border-radius:16px; padding:14px 16px; backdrop-filter: blur(3px);
+    /* Radial glow */
+    .auth-left::after{
+      content:''; position:absolute; inset:0; pointer-events:none;
+      background:radial-gradient(ellipse 70% 60% at 30% 30%, rgba(255,255,255,.06), transparent);
     }
-    .card-auth{border:none;border-radius:18px;box-shadow:0 18px 60px rgba(16,24,40,.10)}
-    .form-control{border-radius:10px}
-    .input-group-text{border-radius:10px 0 0 10px}
-    .btn-dark{background:var(--ink);border-color:var(--ink)}
-    .btn-dark:focus{box-shadow:0 0 0 .2rem rgba(14,15,20,.25)}
-    .auth-right-bg{background:var(--right-bg);}
-    @media (max-width: 991.98px){
-      .auth-right-bg{background:#fff;}
+
+    .left-inner{position:relative; z-index:1; max-width:460px;}
+
+    /* Brand */
+    .auth-brand{
+      display:flex; align-items:center; gap:.7rem; margin-bottom:2.5rem;
     }
+    .auth-brand-icon{
+      width:46px; height:46px; border-radius:12px;
+      background:rgba(255,255,255,.15);
+      border:1.5px solid rgba(255,255,255,.25);
+      display:flex; align-items:center; justify-content:center;
+      font-size:1.3rem; backdrop-filter:blur(4px);
+    }
+    .auth-brand-name{font-size:1.5rem; font-weight:900; letter-spacing:-.04em;}
+    .auth-brand-sub{font-size:.8rem; opacity:.65; margin-top:.05rem;}
+
+    .auth-headline{
+      font-size:clamp(1.8rem,3vw,2.6rem);
+      font-weight:900; letter-spacing:-.04em; line-height:1.1;
+      margin-bottom:1rem;
+    }
+    .auth-headline em{
+      font-style:normal;
+      background:linear-gradient(90deg,#a7f3d0,#6ee7b7);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      background-clip:text;
+    }
+    .auth-lead{font-size:.92rem; opacity:.82; line-height:1.65; margin-bottom:2rem;}
+
+    /* Feature pills on left */
+    .auth-pill{
+      display:flex; align-items:flex-start; gap:.85rem;
+      background:rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.14);
+      border-radius:14px; padding:1rem 1.1rem;
+      backdrop-filter:blur(6px);
+      margin-bottom:.7rem;
+      transition:background .2s;
+    }
+    .auth-pill:hover{background:rgba(255,255,255,.14);}
+    .auth-pill-icon{
+      width:34px; height:34px; border-radius:9px; flex-shrink:0;
+      background:rgba(255,255,255,.15);
+      display:flex; align-items:center; justify-content:center; font-size:1rem;
+    }
+    .auth-pill-title{font-size:.83rem; font-weight:700; margin-bottom:.12rem;}
+    .auth-pill-sub{font-size:.75rem; opacity:.72; line-height:1.4;}
+
+    /* Stats row */
+    .auth-stats{
+      display:flex; gap:2rem; margin-top:2rem;
+      padding-top:1.5rem; border-top:1px solid rgba(255,255,255,.15);
+    }
+    .auth-stat-num{font-size:1.4rem; font-weight:900; letter-spacing:-.04em;}
+    .auth-stat-label{font-size:.73rem; opacity:.65; margin-top:.1rem;}
+
+    /* ── RIGHT PANEL ── */
+    .auth-right{
+      flex:1; display:flex; align-items:center; justify-content:center;
+      padding:2rem 1.5rem;
+      background:#f9fafb;
+    }
+    .auth-card{
+      background:#fff; border-radius:20px;
+      box-shadow: var(--shadow-lg);
+      padding:2.8rem 2.4rem;
+      width:100%; max-width:460px;
+      border:1px solid var(--line);
+    }
+
+    /* Card header */
+    .card-logo{
+      width:50px; height:50px; border-radius:13px;
+      background:linear-gradient(135deg,var(--green-mid),var(--green-dark));
+      display:flex; align-items:center; justify-content:center;
+      color:#fff; font-size:1.35rem;
+      box-shadow:0 4px 14px rgba(11,107,43,.35);
+      margin-bottom:1.4rem;
+    }
+    .auth-card h2{font-size:1.3rem; font-weight:800; letter-spacing:-.03em; color:var(--ink); margin-bottom:.3rem;}
+    .auth-card .auth-sub{font-size:.85rem; color:var(--muted); margin-bottom:1.8rem;}
+
+    /* Form controls */
+    .field-label{font-size:.8rem; font-weight:600; color:#374151; margin-bottom:.4rem; display:block;}
+    .input-wrap{
+      display:flex; align-items:center;
+      border:1.5px solid var(--line); border-radius:var(--r);
+      background:#fff; overflow:hidden;
+      transition:border-color .15s, box-shadow .15s;
+    }
+    .input-wrap:focus-within{
+      border-color:var(--green);
+      box-shadow:0 0 0 3px rgba(11,107,43,.12);
+    }
+    .input-prefix{
+      padding:0 .85rem; color:var(--muted); font-size:.95rem;
+      border-right:1.5px solid var(--line); height:44px;
+      display:flex; align-items:center; flex-shrink:0;
+      background:#fafafa;
+    }
+    .input-wrap input{
+      border:none; outline:none; padding:.65rem .9rem;
+      font-size:.88rem; width:100%; color:var(--ink);
+      background:transparent;
+    }
+    .input-wrap input::placeholder{color:var(--muted); opacity:.7;}
+    .toggle-pwd{
+      padding:0 .85rem; cursor:pointer; color:var(--muted);
+      font-size:1rem; flex-shrink:0; border:none; background:transparent;
+      height:44px; display:flex; align-items:center;
+      transition:color .15s;
+    }
+    .toggle-pwd:hover{color:var(--ink);}
+
+    /* Error state */
+    .input-wrap.is-error{border-color:#ef4444; box-shadow:0 0 0 3px rgba(239,68,68,.1);}
+
+    /* Submit button */
+    .btn-submit{
+      width:100%; padding:.75rem;
+      background:var(--ink); color:#fff; border:none;
+      border-radius:var(--r); font-size:.92rem; font-weight:700;
+      cursor:pointer; transition:opacity .2s, transform .15s;
+      display:flex; align-items:center; justify-content:center; gap:.5rem;
+      letter-spacing:-.01em;
+    }
+    .btn-submit:hover{opacity:.88; transform:translateY(-1px);}
+    .btn-submit:active{transform:translateY(0);}
+    .btn-submit:disabled{opacity:.55; cursor:not-allowed; transform:none;}
+
+    /* Divider */
+    .auth-divider{
+      display:flex; align-items:center; gap:.75rem; margin:1.4rem 0;
+      font-size:.76rem; color:var(--muted);
+    }
+    .auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--line);}
+
+    /* Footer link */
+    .auth-footer-link{
+      display:block; text-align:center; font-size:.8rem;
+      color:var(--muted); text-decoration:none;
+      padding:.6rem; border-radius:var(--r);
+      border:1.5px solid var(--line);
+      transition:border-color .15s, color .15s, background .15s;
+    }
+    .auth-footer-link:hover{border-color:var(--green); color:var(--green); background:var(--green-soft);}
+
+    /* Mobile top brand */
+    .mobile-brand{
+      display:none; justify-content:center; margin-bottom:1.8rem;
+    }
+    @media(max-width:991px){.mobile-brand{display:flex;}}
+    .mobile-brand-inner{
+      display:flex; align-items:center; gap:.55rem;
+      font-weight:800; font-size:1.1rem; color:var(--ink); letter-spacing:-.03em;
+    }
+    .mobile-brand-icon{
+      width:36px; height:36px; border-radius:10px;
+      background:linear-gradient(135deg,var(--green-mid),var(--green-dark));
+      display:flex; align-items:center; justify-content:center;
+      color:#fff; font-size:1rem;
+    }
+
+    /* Spinner */
+    .spinner-sm{
+      width:16px; height:16px; border:2px solid rgba(255,255,255,.4);
+      border-top-color:#fff; border-radius:50%;
+      animation:spin .6s linear infinite; display:none;
+    }
+    @keyframes spin{to{transform:rotate(360deg)}}
   </style>
 </head>
 <body>
-  <div class="container-fluid p-0">
-    <!-- Fila ocupa SIEMPRE todo el alto de la ventana -->
-    <div class="row g-0 min-svh-100">
 
-      <!-- IZQUIERDA: HERO ocupa todo el alto -->
-      <aside class="col-lg-6 d-none d-lg-flex flex-column justify-content-center hero min-svh-100">
-        <div class="p-5" style="max-width:680px">
-          <div class="d-flex align-items-center gap-3 mb-3">
-            <div class="brand-badge"><i class="bi bi-geo-alt"></i></div>
-            <div>
-              <h1 class="h2 mb-0">VacWeb</h1>
-              <p class="mb-0 opacity-75">Sistema de Control Ganadero</p>
-            </div>
+<div class="auth-wrap">
+
+  <!-- ════ LEFT PANEL ════ -->
+  <aside class="auth-left">
+    <div class="left-inner">
+
+      <!-- Brand -->
+      <div class="auth-brand">
+        <div class="auth-brand-icon"><i class="bi bi-activity"></i></div>
+        <div>
+          <div class="auth-brand-name">VacWeb</div>
+          <div class="auth-brand-sub">Sistema de Control Ganadero</div>
+        </div>
+      </div>
+
+      <h1 class="auth-headline">
+        Tu hato,<br>bajo <em>control total.</em>
+      </h1>
+      <p class="auth-lead">
+        Trazabilidad completa, historial sanitario y reportes para auditorías ICA.
+        Todo desde una sola plataforma, en tiempo real.
+      </p>
+
+      <!-- Feature pills -->
+      <div class="auth-pill">
+        <div class="auth-pill-icon"><i class="bi bi-qr-code"></i></div>
+        <div>
+          <div class="auth-pill-title">Identificación RFID</div>
+          <div class="auth-pill-sub">Ficha individual por animal con historial completo de movimientos y eventos.</div>
+        </div>
+      </div>
+      <div class="auth-pill">
+        <div class="auth-pill-icon"><i class="bi bi-clipboard2-pulse"></i></div>
+        <div>
+          <div class="auth-pill-title">Salud &amp; Sanidad</div>
+          <div class="auth-pill-sub">Vacunas, desparasitaciones y tratamientos. Alertas por fechas pendientes.</div>
+        </div>
+      </div>
+      <div class="auth-pill">
+        <div class="auth-pill-icon"><i class="bi bi-shield-check"></i></div>
+        <div>
+          <div class="auth-pill-title">Cumplimiento normativo</div>
+          <div class="auth-pill-sub">Alineado a los lineamientos del ICA para trazabilidad bovina.</div>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="auth-stats">
+        <div>
+          <div class="auth-stat-num">100%</div>
+          <div class="auth-stat-label">Trazabilidad</div>
+        </div>
+        <div>
+          <div class="auth-stat-num">24/7</div>
+          <div class="auth-stat-label">Disponibilidad</div>
+        </div>
+        <div>
+          <div class="auth-stat-num">RBAC</div>
+          <div class="auth-stat-label">Seguridad por roles</div>
+        </div>
+      </div>
+
+    </div>
+  </aside>
+
+  <!-- ════ RIGHT PANEL ════ -->
+  <main class="auth-right">
+    <div class="auth-card">
+
+      <!-- Mobile brand (solo visible en móvil) -->
+      <div class="mobile-brand">
+        <div class="mobile-brand-inner">
+          <div class="mobile-brand-icon"><i class="bi bi-activity"></i></div>
+          VacWeb
+        </div>
+      </div>
+
+      <!-- Card icon -->
+      <div class="card-logo"><i class="bi bi-person-lock"></i></div>
+
+      <h2>Bienvenido de nuevo</h2>
+      <p class="auth-sub">Ingresa tus credenciales para acceder al panel</p>
+
+      <!-- Alerts -->
+      {% if error %}
+        <div class="alert alert-warning d-flex align-items-center gap-2 py-2 mb-3" style="font-size:.84rem;border-radius:10px;">
+          <i class="bi bi-exclamation-triangle-fill flex-shrink-0"></i>{{ error }}
+        </div>
+      {% endif %}
+      {% if messages %}
+        {% for m in messages %}
+          <div class="alert alert-{{ m.tags }} d-flex align-items-center gap-2 py-2 mb-3" style="font-size:.84rem;border-radius:10px;">
+            <i class="bi bi-info-circle-fill flex-shrink-0"></i>{{ m }}
           </div>
+        {% endfor %}
+      {% endif %}
 
-          <p class="lead mb-4">La plataforma completa para la gestión profesional de tu ganadería. Control, monitoreo y trazabilidad en tiempo real.</p>
+      <!-- Form -->
+      <form method="post" novalidate id="login-form">
+        {% csrf_token %}
 
-          <div class="d-flex flex-column gap-3 mb-4">
-            <div class="pill">
-              <div class="d-flex align-items-center gap-2 mb-1"><i class="bi bi-clipboard2-pulse"></i><strong>Gestión de animales</strong></div>
-              <small class="opacity-75">RFID, pesajes, movimientos entre potreros y trazabilidad completa.</small>
-            </div>
-            <div class="pill">
-              <div class="d-flex align-items-center gap-2 mb-1"><i class="bi bi-bandaid"></i><strong>Salud y tratamientos</strong></div>
-              <small class="opacity-75">Vacunas, desparasitaciones y seguimiento médico con evidencias.</small>
-            </div>
-            <div class="pill">
-              <div class="d-flex align-items-center gap-2 mb-1"><i class="bi bi-shield-check"></i><strong>Cumplimiento normativo</strong></div>
-              <small class="opacity-75">Alineado a lineamientos ICA para garantizar cumplimiento.</small>
-            </div>
-          </div>
-
-          <div class="row g-4 opacity-90">
-            <div class="col-4"><strong>100%</strong><br><small>Trazabilidad</small></div>
-            <div class="col-4"><strong>24/7</strong><br><small>Disponibilidad</small></div>
-            <div class="col-4"><strong>ICA</strong><br><small>Certificado</small></div>
+        <div class="mb-3">
+          <label class="field-label" for="id_username">Usuario o correo electrónico</label>
+          <div class="input-wrap">
+            <div class="input-prefix"><i class="bi bi-person"></i></div>
+            <input type="text" id="id_username" name="username"
+                   placeholder="usuario o correo@finca.com"
+                   autocomplete="username" required>
           </div>
         </div>
-      </aside>
 
-      <!-- DERECHA: FONDO SUAVE + TARJETA centrada, también todo el alto -->
-      <main class="col-12 col-lg-6 d-flex align-items-center justify-content-center p-4 p-lg-5 auth-right-bg min-svh-100">
-        <div class="card card-auth w-100" style="max-width: 520px;">
-          <div class="card-body p-4 p-lg-5">
-            <h2 class="h5 mb-1">Bienvenido de nuevo</h2>
-            <p class="text-secondary mb-4">Ingresa tus credenciales para acceder</p>
+        <div class="mb-1">
+          <label class="field-label" for="id_password">Contraseña</label>
+          <div class="input-wrap">
+            <div class="input-prefix"><i class="bi bi-lock"></i></div>
+            <input type="password" id="id_password" name="password"
+                   placeholder="••••••••"
+                   autocomplete="current-password" required>
+            <button type="button" class="toggle-pwd" id="toggle-pwd" title="Mostrar / ocultar contraseña" tabindex="-1">
+              <i class="bi bi-eye" id="toggle-icon"></i>
+            </button>
+          </div>
+        </div>
 
-            {% if error %}
-              <div class="alert alert-warning" role="alert">{{ error }}</div>
-            {% endif %}
-            {% if messages %}
-              {% for m in messages %}
-                <div class="alert alert-{{ m.tags }} mb-3">{{ m }}</div>
-              {% endfor %}
-            {% endif %}
+        <div class="d-flex justify-content-end mb-4" style="margin-top:.5rem;">
+          <a href="/password_reset/" style="font-size:.78rem;color:var(--muted);text-decoration:none;"
+             onmouseover="this.style.color='var(--green)'" onmouseout="this.style.color='var(--muted)'">
+            ¿Olvidaste tu contraseña?
+          </a>
+        </div>
 
-            <form method="post" novalidate>
-              {% csrf_token %}
-              <div class="mb-3">
-                <label class="form-label">Usuario o Correo Electrónico</label>
-                <div class="input-group">
-                  <span class="input-group-text"><i class="bi bi-person"></i></span>
-                  <input type="text" name="username" class="form-control" placeholder="usuario o correo@finca.com" required>
-                </div>
-              </div>
-              <div class="mb-2">
-                <label class="form-label">Contraseña</label>
-                <div class="input-group">
-                  <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                  <input type="password" name="password" class="form-control" placeholder="••••••••" required>
-                </div>
-              </div>
-              <div class="d-flex justify-content-end mb-3">
-                <a href="/password_reset/" class="small text-decoration-none">¿Olvidaste tu contraseña?</a>
-              </div>
-              <div class="d-grid">
-                <button type="submit" class="btn btn-dark btn-lg">Iniciar Sesión</button>
+        <button type="submit" class="btn-submit" id="btn-submit">
+          <span class="spinner-sm" id="spinner"></span>
+          <span id="btn-text"><i class="bi bi-box-arrow-in-right"></i>&nbsp;Iniciar sesión</span>
+        </button>
+      </form>
+
+      <div class="auth-divider">o</div>
+
+      <a href="/" class="auth-footer-link">
+        <i class="bi bi-house me-1"></i>Volver al inicio
+      </a>
+
+      <!-- Security note -->
+      <p style="font-size:.72rem;color:var(--muted);text-align:center;margin-top:1.4rem;margin-bottom:0;">
+        <i class="bi bi-shield-lock me-1"></i>Conexión segura · Sesión protegida con Django Auth
+      </p>
+
+    </div>
+  </main>
+
+</div>
+
+<script>
+(function(){
+  /* ── Toggle password visibility ── */
+  var btn  = document.getElementById('toggle-pwd');
+  var icon = document.getElementById('toggle-icon');
+  var pwd  = document.getElementById('id_password');
+
+  if(btn){
+    btn.addEventListener('click', function(){
+      var show = pwd.type === 'password';
+      pwd.type = show ? 'text' : 'password';
+      icon.className = show ? 'bi bi-eye-slash' : 'bi bi-eye';
+    });
+  }
+
+  /* ── Loading state on submit ── */
+  var form    = document.getElementById('login-form');
+  var btnEl   = document.getElementById('btn-submit');
+  var spinner = document.getElementById('spinner');
+  var btnText = document.getElementById('btn-text');
+
+  if(form){
+    form.addEventListener('submit', function(){
+      if(!form.checkValidity()) return;
+      btnEl.disabled  = true;
+      spinner.style.display = 'block';
+      btnText.style.opacity = '.7';
+    });
+  }
+})();
+</script>
+</body>
+</html>

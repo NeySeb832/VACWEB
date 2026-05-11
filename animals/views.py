@@ -7,7 +7,9 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Q, Count
+from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from authz.decorators import require_perm
@@ -129,6 +131,8 @@ def animal_detail(request, pk: int):
     puede_leer_transacciones   = has_perm_code(request.user, "transacciones.read")
     puede_escribir_transacciones = has_perm_code(request.user, "transacciones.write")
 
+    puede_editar = has_perm_code(request.user, "animals.write")
+
     ctx = {
         "animal": animal,
         "movimientos": movimientos,
@@ -142,6 +146,7 @@ def animal_detail(request, pk: int):
         "ultimas_transacciones":      ultimas_transacciones,
         "puede_leer_transacciones":   puede_leer_transacciones,
         "puede_escribir_transacciones": puede_escribir_transacciones,
+        "puede_editar":               puede_editar,
     }
     return render(request, "animals/animal_detail.html", ctx)
 
@@ -209,6 +214,119 @@ def animal_baja(request, pk: int):
         "animal": animal,
     }
     return render(request, "animals/animal_baja_confirm.html", ctx)
+
+
+@login_required
+@require_perm("animals.read")
+def rfid_lookup(request):
+    """API JSON: busca un animal por código RFID.
+
+    GET ?code=<rfid>
+    Respuesta: { found: bool, animal: {...} | null, rfid: str }
+    """
+    code = request.GET.get("code", "").strip()
+    if not code:
+        return JsonResponse({"found": False, "error": "Código vacío", "rfid": ""})
+
+    try:
+        animal = Animal.objects.select_related("potrero").get(rfid=code)
+        puede_pesaje = has_perm_code(request.user, "animals.write")
+        puede_evento = has_perm_code(request.user, "eventos.write")
+        puede_tx     = has_perm_code(request.user, "transacciones.write")
+        return JsonResponse({
+            "found": True,
+            "rfid": code,
+            "animal": {
+                "pk":             animal.pk,
+                "rfid":           animal.rfid or "",
+                "nombre":         animal.nombre or "",
+                "display":        animal.nombre or animal.rfid or "Sin ID",
+                "raza":           animal.raza or "",
+                "sexo":           animal.get_sexo_display() if animal.sexo else "",
+                "etapa":          animal.get_etapa_display() if animal.etapa else "",
+                "estado":         animal.estado,
+                "estado_display": animal.get_estado_display(),
+                "potrero":        str(animal.potrero) if animal.potrero else "Sin lote",
+                "url_detalle":    reverse("animals:detail", args=[animal.pk]),
+                "url_pesaje":     (reverse("pesajes:create") + f"?animal={animal.pk}") if puede_pesaje else "",
+                "url_evento":     (reverse("eventos:create") + f"?animal={animal.pk}") if puede_evento else "",
+                "url_transaccion":(reverse("transacciones:create") + f"?animal={animal.pk}") if puede_tx and animal.estado == "ACT" else "",
+            },
+        })
+    except Animal.DoesNotExist:
+        return JsonResponse({"found": False, "rfid": code})
+
+
+@login_required
+@require_perm("animals.read")
+def rfid_scan(request):
+    """Página dedicada de escaneo RFID.
+
+    Modo autónomo: el usuario escanea y el sistema busca el animal.
+    Soporta:
+      - Lectores USB HID (emulación de teclado, el lector envía Enter al final)
+      - Web Serial API (lectores serie RS-232 / USB-CDC)
+      - Web NFC (Android Chrome con tags NFC)
+    """
+    return render(request, "animals/rfid_scan.html", {
+        "lookup_url": reverse("animals:rfid_lookup"),
+        "create_url": reverse("animals:create"),
+        "puede_crear": has_perm_code(request.user, "animals.write"),
+    })
+
+
+@login_required
+@require_perm("animals.write")
+@require_POST
+def animal_foto(request, pk: int):
+    """Actualizar o eliminar la foto de un animal (POST únicamente).
+
+    Campos POST:
+      - accion = "subir"    → request.FILES["foto"] reemplaza la foto actual.
+      - accion = "eliminar" → borra el archivo y pone foto=None.
+    """
+    animal = get_object_or_404(Animal, pk=pk)
+
+    accion = request.POST.get("accion", "subir").strip()
+
+    if accion == "eliminar":
+        if animal.foto:
+            animal.foto.delete(save=False)   # borra el archivo físico
+            animal.foto = None
+            animal.last_modified_by = request.user
+            animal.save(update_fields=["foto", "last_modified_by", "updated_at"])
+            messages.success(request, "Foto eliminada correctamente.")
+        else:
+            messages.warning(request, "El animal no tiene foto para eliminar.")
+
+    else:  # subir / reemplazar
+        foto = request.FILES.get("foto")
+        if not foto:
+            messages.error(request, "No se recibió ningún archivo de imagen.")
+            return redirect("animals:detail", pk=pk)
+
+        # Validación básica de tipo MIME en el servidor
+        allowed_types = {"image/jpeg", "image/png", "image/webp", "image/gif"}
+        if foto.content_type not in allowed_types:
+            messages.error(request, "Formato no soportado. Usa JPG, PNG, WEBP o GIF.")
+            return redirect("animals:detail", pk=pk)
+
+        # Limitar tamaño: 5 MB
+        max_bytes = 5 * 1024 * 1024
+        if foto.size > max_bytes:
+            messages.error(request, "La imagen no puede superar los 5 MB.")
+            return redirect("animals:detail", pk=pk)
+
+        # Borrar la foto anterior si existe
+        if animal.foto:
+            animal.foto.delete(save=False)
+
+        animal.foto = foto
+        animal.last_modified_by = request.user
+        animal.save(update_fields=["foto", "last_modified_by", "updated_at"])
+        messages.success(request, "Foto actualizada correctamente.")
+
+    return redirect("animals:detail", pk=pk)
 
 
 @login_required

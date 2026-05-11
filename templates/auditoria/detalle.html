@@ -1,0 +1,156 @@
+{% extends "base/menu_base.html" %}
+{% block title %}Detalle Auditoría #{{ registro.pk }} · VacWeb{% endblock %}
+
+{% block extra_head %}
+<style>
+  .badge-accion { font-size: .8rem; font-weight: 600; padding: .3rem .8rem; border-radius: 999px; }
+  .badge-CREAR      { background: #dcfce7; color: #166534; }
+  .badge-EDITAR     { background: #fef9c3; color: #713f12; }
+  .badge-ELIMINAR   { background: #fee2e2; color: #991b1b; }
+  .badge-ACCEDER    { background: #dbeafe; color: #1e40af; }
+  .badge-ANULAR     { background: #fce7f3; color: #9d174d; }
+  .badge-CONFIGURAR { background: #ede9fe; color: #5b21b6; }
+
+  .detail-label { font-size: .75rem; color: #6b7280; text-transform: uppercase; letter-spacing: .04em; margin-bottom: .2rem; }
+  .detail-value { font-size: .95rem; font-weight: 500; color: #111827; }
+  .detail-card  { border-radius: 12px; }
+  pre.delta { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+              padding: 1rem; font-size: .8rem; overflow-x: auto; white-space: pre-wrap; margin: 0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-2 mb-4">
+  <a href="{% url 'auditoria:index' %}" class="btn btn-sm btn-outline-secondary">
+    <i class="bi bi-arrow-left me-1"></i>Volver al listado
+  </a>
+  <h5 class="fw-semibold mb-0 ms-1" style="color:var(--gp-ink);">
+    Detalle del Registro de Auditoría
+    <span class="text-muted fw-normal" style="font-size:.85rem;">#{{ registro.pk }}</span>
+  </h5>
+</div>
+
+<div class="row g-3">
+
+  {# ── Columna izquierda: datos principales ─────────────────────────────── #}
+  <div class="col-12 col-lg-6">
+    <div class="card border-0 shadow-sm detail-card h-100">
+      <div class="card-header bg-white border-bottom py-2">
+        <span class="fw-semibold" style="font-size:.9rem;">
+          <i class="bi bi-info-circle me-1 text-success"></i>Información completa
+        </span>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+
+          <div class="col-6">
+            <div class="detail-label">Usuario</div>
+            <div class="detail-value">{{ registro.usuario_nombre|default:"—" }}</div>
+          </div>
+
+          <div class="col-6">
+            <div class="detail-label">Rol</div>
+            <div class="detail-value">
+              <span class="badge bg-light text-dark border">{{ rol_usuario }}</span>
+            </div>
+          </div>
+
+          <div class="col-6">
+            <div class="detail-label">Acción</div>
+            <div>
+              <span class="badge-accion badge-{{ registro.accion }}">{{ registro.accion }}</span>
+            </div>
+          </div>
+
+          <div class="col-6">
+            <div class="detail-label">Entidad</div>
+            <div class="detail-value">{{ registro.entidad }}</div>
+          </div>
+
+          <div class="col-6">
+            <div class="detail-label">ID Entidad</div>
+            <div class="detail-value" style="font-family:monospace;">
+              {{ registro.entidad_id|default:"—" }}
+            </div>
+          </div>
+
+          <div class="col-6">
+            <div class="detail-label">Módulo Origen</div>
+            <div class="detail-value">
+              {% if registro.modulo_origen %}
+                <span class="badge bg-light text-dark border">{{ registro.modulo_origen }}</span>
+              {% else %}—{% endif %}
+            </div>
+          </div>
+
+          <div class="col-6">
+            <div class="detail-label">Fecha y Hora</div>
+            <div class="detail-value">{{ registro.fecha|date:"d/m/Y, H:i:s" }}</div>
+          </div>
+
+          <div class="col-6">
+            <div class="detail-label">IP de Origen</div>
+            <div class="detail-value" style="font-family:monospace;">
+              {{ registro.ip_origen|default:"—" }}
+            </div>
+          </div>
+
+          {% if registro.resumen %}
+          <div class="col-12">
+            <div class="detail-label">Resumen</div>
+            <div class="detail-value" style="font-size:.9rem;">{{ registro.resumen }}</div>
+          </div>
+          {% endif %}
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ── Columna derecha: delta de cambios ────────────────────────────────── #}
+  <div class="col-12 col-lg-6">
+    <div class="card border-0 shadow-sm detail-card h-100">
+      <div class="card-header bg-white border-bottom py-2">
+        <span class="fw-semibold" style="font-size:.9rem;">
+          <i class="bi bi-code-slash me-1 text-success"></i>Detalle de la Operación
+        </span>
+      </div>
+      <div class="card-body d-flex flex-column gap-3">
+
+        {% if ant_fmt %}
+        <div>
+          <div class="detail-label mb-1">
+            <i class="bi bi-arrow-left-circle text-danger me-1"></i>Valores anteriores
+          </div>
+          <pre class="delta">{{ ant_fmt }}</pre>
+        </div>
+        {% endif %}
+
+        {% if nue_fmt %}
+        <div>
+          <div class="detail-label mb-1">
+            <i class="bi bi-arrow-right-circle text-success me-1"></i>Valores nuevos
+          </div>
+          <pre class="delta">{{ nue_fmt }}</pre>
+        </div>
+        {% endif %}
+
+        {% if not ant_fmt and not nue_fmt %}
+        <div class="text-muted text-center py-4" style="font-size:.85rem;">
+          <i class="bi bi-dash-circle d-block fs-3 mb-2"></i>
+          Este registro no contiene detalle de cambios de datos.
+        </div>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{# ── Aviso de inmutabilidad ─────────────────────────────────────────────── #}
+<div class="mt-3 text-muted d-flex align-items-center gap-2" style="font-size:.78rem;">
+  <i class="bi bi-lock-fill text-success"></i>
+  Este registro es inmutable (CU-010 RN-2). No puede ser modificado ni eliminado.
+</div>
+{% endblock %}

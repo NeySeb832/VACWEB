@@ -149,6 +149,50 @@ class AnimalInlineForm(forms.Form):
         return cleaned
 
 
+class TransaccionMasivaForm(forms.Form):
+    """Formulario de campos compartidos para transacciones masivas (CU-006 Masivo).
+
+    Solo permite Venta y Sacrificio porque la Compra requiere crear/seleccionar
+    un animal individual distinto por registro.
+    """
+
+    TIPOS_MASIVO = [
+        (Transaccion.Tipo.VENTA,      "Venta"),
+        (Transaccion.Tipo.SACRIFICIO, "Sacrificio"),
+    ]
+
+    tipo = forms.ChoiceField(
+        choices=TIPOS_MASIVO,
+        label="Tipo de transacción",
+        widget=forms.Select(attrs=_SELECT),
+    )
+    fecha = forms.DateField(
+        label="Fecha",
+        widget=forms.DateInput(attrs={**_FECHA, "max": str(_date.today())}),
+    )
+    origen_destino = forms.CharField(
+        max_length=200,
+        label="Destino",
+        widget=forms.TextInput(
+            attrs={**_TEXTO, "placeholder": "Ej: Frigorífico Central / Finca El Roble"}
+        ),
+    )
+    observaciones = forms.CharField(
+        required=False,
+        label="Observaciones",
+        widget=forms.Textarea(
+            attrs={**_TEXTO, "rows": 2,
+                   "placeholder": "Observaciones adicionales (opcional)"}
+        ),
+    )
+
+    def clean_fecha(self):
+        fecha = self.cleaned_data.get("fecha")
+        if fecha and fecha > _date.today():
+            raise forms.ValidationError("La fecha no puede ser posterior a hoy.")
+        return fecha
+
+
 class AnulacionTransaccionForm(forms.Form):
     motivo = forms.CharField(
         label="Motivo de anulación",

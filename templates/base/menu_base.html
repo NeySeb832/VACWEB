@@ -6,245 +6,393 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>{% block title %}VacWeb · Panel{% endblock %}</title>
 
-  <!-- Bootstrap + Icons -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
   <style>
-    :root{
-      --gp-green:#0b6b2b;
-      --gp-green-soft:#e9f7ef;
-      --gp-green-pill:#bbf7d0;
-      --gp-ink:#0f172a;
-      --gp-muted:#6b7280;
-      --gp-line:#e5e7eb;
-      --bg-body:#f5f7fb;
+    /* ══════════════════════════════════════
+       DESIGN TOKENS
+    ══════════════════════════════════════ */
+    :root {
+      --gp-green:          #0b6b2b;
+      --gp-green-dark:     #064e3b;
+      --gp-green-mid:      #15803d;
+      --gp-green-soft:     #e9f7ef;
+      --gp-green-pill:     #bbf7d0;
+      --gp-ink:            #0f172a;
+      --gp-ink-2:          #1e293b;
+      --gp-muted:          #6b7280;
+      --gp-muted-2:        #9ca3af;
+      --gp-line:           #e5e7eb;
+      --gp-line-2:         #f3f4f6;
+      --bg-body:           #f0f2f7;
+      --bg-surface:        #ffffff;
+
+      --gp-shadow-xs: 0 1px 2px rgba(15,23,42,.04);
+      --gp-shadow-sm: 0 1px 3px rgba(15,23,42,.06), 0 2px 8px rgba(15,23,42,.04);
+      --gp-shadow:    0 4px 16px rgba(15,23,42,.08), 0 1px 3px rgba(15,23,42,.04);
+      --gp-shadow-lg: 0 12px 40px rgba(15,23,42,.12), 0 4px 12px rgba(15,23,42,.06);
+
+      --ease-out:  cubic-bezier(.4,0,.2,1);
+      --ease-spring: cubic-bezier(.34,1.56,.64,1);
+      --t-fast:    .14s;
+      --t-base:    .2s;
+      --t-slow:    .35s;
+
+      --r-sm: 8px;
+      --r-md: 12px;
+      --r-lg: 16px;
+      --r-xl: 20px;
+      --r-pill: 999px;
     }
 
-    html,body{
-      height:100%;
-    }
-    body{
-      margin:0;
-      font-family: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-      background:var(--bg-body);
-      color:var(--gp-ink);
+    /* ══════════════════════════════════════
+       RESET / BASE
+    ══════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; }
+
+    /* Scrollbar global */
+    * { scrollbar-width: thin; scrollbar-color: #d1d5db transparent; }
+    ::-webkit-scrollbar        { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track  { background: transparent; }
+    ::-webkit-scrollbar-thumb  { background: #d1d5db; border-radius: var(--r-pill); }
+    ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+
+    /* Focus ring */
+    :focus-visible {
+      outline: 2px solid var(--gp-green);
+      outline-offset: 2px;
+      border-radius: 4px;
     }
 
-    .app-root{
-      min-height:100vh;
-      background:var(--bg-body);
-      display:flex;
-      flex-direction:column;
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg-body);
+      color: var(--gp-ink);
+      -webkit-font-smoothing: antialiased;
     }
 
-    /* TOPBAR (arriba de todo, como en el mockup) */
-    .topbar{
-      height:64px;
-      background:#ffffff;
-      border-bottom:1px solid var(--gp-line);
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      padding:0 1.75rem;
+    /* ══════════════════════════════════════
+       PAGE TRANSITION
+    ══════════════════════════════════════ */
+    @keyframes gp-fade-up {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .app-content { animation: gp-fade-up .3s var(--ease-out) both; }
+
+    /* ══════════════════════════════════════
+       TOPBAR
+    ══════════════════════════════════════ */
+    .topbar {
+      height: 60px;
+      background: rgba(255,255,255,.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--gp-line);
+      box-shadow: var(--gp-shadow-sm);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.5rem;
+      position: sticky;
+      top: 0;
+      z-index: 200;
     }
 
-    .brand-wrap{
-      display:flex;
-      align-items:center;
-      gap:.75rem;
-    }
-    .brand-icon{
-      width:36px;
-      height:36px;
-      border-radius:999px;
-      background:var(--gp-green-soft);
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      color:var(--gp-green);
-      font-size:1.2rem;
-    }
-    .brand-text{
-      line-height:1.1;
-    }
-    .brand-text .title{
-      font-weight:600;
-      font-size:.95rem;
-    }
-    .brand-text .sub{
-      font-size:.72rem;
-      color:var(--gp-muted);
+    /* Brand */
+    .brand-wrap { display: flex; align-items: center; gap: .65rem; }
+
+    .brand-icon {
+      width: 34px; height: 34px;
+      border-radius: var(--r-sm);
+      background: linear-gradient(135deg, #d1fae5 0%, var(--gp-green-pill) 100%);
+      display: inline-flex; align-items: center; justify-content: center;
+      color: var(--gp-green);
+      font-size: 1.1rem;
+      box-shadow: 0 2px 8px rgba(11,107,43,.18);
+      flex-shrink: 0;
     }
 
-    .topbar-center{
-      flex:1;
-      display:flex;
-      justify-content:center;
+    .brand-text { line-height: 1.15; }
+    .brand-text .title { font-weight: 700; font-size: .92rem; letter-spacing: -.02em; color: var(--gp-ink); }
+    .brand-text .sub   { font-size: .67rem; color: var(--gp-muted); letter-spacing: .01em; }
+
+    /* Bell button */
+    .btn-icon {
+      width: 34px; height: 34px;
+      border-radius: var(--r-sm);
+      display: inline-flex; align-items: center; justify-content: center;
+      border: 1px solid var(--gp-line);
+      background: var(--bg-surface);
+      color: var(--gp-muted);
+      text-decoration: none;
+      transition: background var(--t-base) var(--ease-out),
+                  border-color var(--t-base) var(--ease-out),
+                  color var(--t-base) var(--ease-out),
+                  box-shadow var(--t-base) var(--ease-out);
+    }
+    .btn-icon:hover {
+      background: var(--gp-green-soft);
+      border-color: var(--gp-green-pill);
+      color: var(--gp-green);
+      box-shadow: 0 0 0 3px rgba(11,107,43,.08);
     }
 
-    .farm-selector{
-      display:flex;
-      align-items:center;
-      gap:.5rem;
+    /* Pulsing badge */
+    @keyframes badge-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,.5); }
+      60%       { box-shadow: 0 0 0 5px rgba(220,38,38,.0); }
     }
-    .farm-label{
-      font-size:.8rem;
-      font-weight:500;
+    #badge-alertas { animation: badge-pulse 2.5s ease-in-out infinite; }
+
+    /* User chip */
+    .user-chip {
+      border-radius: var(--r-md);
+      border: 1px solid var(--gp-line);
+      padding: .22rem .65rem .22rem .22rem;
+      display: flex; align-items: center; gap: .45rem;
+      background: #f9fafb;
+      cursor: pointer;
+      transition: background var(--t-base) var(--ease-out),
+                  border-color var(--t-base) var(--ease-out),
+                  box-shadow var(--t-base) var(--ease-out);
     }
-    .farm-label small{
-      display:block;
-      font-weight:400;
-      font-size:.72rem;
-      color:var(--gp-muted);
+    .user-chip:hover {
+      background: var(--gp-green-soft);
+      border-color: var(--gp-green-pill);
+      box-shadow: 0 0 0 3px rgba(11,107,43,.06);
     }
 
-    .status-pill{
-      display:inline-flex;
-      align-items:center;
-      gap:.35rem;
-      padding:.25rem .9rem;
-      border-radius:999px;
-      font-size:.75rem;
-      background:var(--gp-green-pill);
-      color:#166534;
+    .user-avatar {
+      width: 28px; height: 28px; border-radius: var(--r-sm);
+      background: var(--gp-ink); color: #f9fafb;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: .8rem; font-weight: 700; flex-shrink: 0;
     }
-    .status-dot{
-      width:8px;
-      height:8px;
-      border-radius:999px;
-      background:#22c55e;
+    .user-meta { line-height: 1.15; }
+    .user-meta .name { font-size: .78rem; font-weight: 600; }
+    .user-meta .role { font-size: .65rem; color: var(--gp-muted); }
+
+    /* Dropdown */
+    .dropdown-menu {
+      border: 1px solid var(--gp-line);
+      border-radius: var(--r-md);
+      box-shadow: var(--gp-shadow-lg);
+      padding: .35rem;
+      animation: gp-fade-up .18s var(--ease-out) both;
+    }
+    .dropdown-item {
+      border-radius: var(--r-sm);
+      font-size: .85rem;
+      padding: .45rem .75rem;
+      transition: background var(--t-fast);
+    }
+    .dropdown-item:hover { background: var(--gp-green-soft); color: var(--gp-green-dark); }
+
+    /* ══════════════════════════════════════
+       APP LAYOUT
+    ══════════════════════════════════════ */
+    .app-root  { min-height: 100vh; display: flex; flex-direction: column; }
+    .app-main  { flex: 1; display: flex; min-height: calc(100vh - 60px); }
+
+    /* ══════════════════════════════════════
+       SIDEBAR
+    ══════════════════════════════════════ */
+    .sidebar {
+      width: 248px;
+      background: var(--bg-surface);
+      border-right: 1px solid var(--gp-line);
+      padding: .85rem .85rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
     }
 
-    .btn-icon{
-      width:2.5rem;
-      height:2.5rem;
-      border-radius:999px;
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      border:1px solid var(--gp-line);
-      background:#fff;
+    .nav-section-label {
+      font-size: .63rem;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--gp-muted-2);
+      margin: 1rem 0 .3rem .55rem;
+      font-weight: 600;
     }
 
-    .user-chip{
-      border-radius:999px;
-      border:1px solid var(--gp-line);
-      padding:.25rem .6rem .25rem .25rem;
-      display:flex;
-      align-items:center;
-      gap:.45rem;
-      background:#f9fafb;
-    }
-    .user-avatar{
-      width:32px;
-      height:32px;
-      border-radius:999px;
-      background:#020617;
-      color:#f9fafb;
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      font-size:.9rem;
-      font-weight:600;
-    }
-    .user-meta{
-      line-height:1.1;
-    }
-    .user-meta .name{
-      font-size:.8rem;
-      font-weight:600;
-    }
-    .user-meta .role{
-      font-size:.72rem;
-      color:var(--gp-muted);
+    .sidebar .nav-link {
+      color: #374151;
+      font-size: .875rem;
+      border-radius: var(--r-md);
+      padding: .48rem .75rem;
+      display: flex;
+      align-items: center;
+      gap: .55rem;
+      margin-bottom: .1rem;
+      text-decoration: none;
+      transition: background var(--t-fast) var(--ease-out),
+                  color var(--t-fast) var(--ease-out),
+                  padding-left var(--t-base) var(--ease-out);
+      position: relative;
     }
 
-    /* LAYOUT PRINCIPAL (sidebar + contenido) */
-    .app-main{
-      flex:1;
-      display:flex;
-      min-height:calc(100vh - 64px);
+    .sidebar .nav-link i {
+      font-size: .95rem;
+      color: var(--gp-muted-2);
+      flex-shrink: 0;
+      transition: color var(--t-fast) var(--ease-out);
+      width: 1.1rem;
+      text-align: center;
     }
 
-    .sidebar{
-      width:260px;
-      background:#ffffff;
-      border-right:1px solid var(--gp-line);
-      padding:1.25rem 1.25rem 1.5rem;
-      display:flex;
-      flex-direction:column;
+    .sidebar .nav-link.active {
+      background: linear-gradient(135deg, #d1fae5 0%, var(--gp-green-pill) 100%);
+      color: var(--gp-green-dark);
+      font-weight: 600;
+    }
+    .sidebar .nav-link.active i { color: var(--gp-green); }
+
+    .sidebar .nav-link:not(.active):hover {
+      background: var(--gp-line-2);
+      color: var(--gp-ink-2);
+      padding-left: 1rem;
+    }
+    .sidebar .nav-link:not(.active):hover i { color: var(--gp-ink-2); }
+
+    /* Badge in sidebar */
+    .sidebar .nav-link .badge { font-size: .62rem; }
+
+    .sidebar-footer {
+      margin-top: auto;
+      font-size: .68rem;
+      color: var(--gp-muted-2);
+      padding-top: .75rem;
+      border-top: 1px solid var(--gp-line);
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+    }
+    .sidebar-footer::before {
+      content: '';
+      display: inline-block;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #22c55e;
+      flex-shrink: 0;
     }
 
-    .nav-section-label{
-      font-size:.7rem;
-      text-transform:uppercase;
-      letter-spacing:.08em;
-      color:#9ca3af;
-      margin-bottom:.5rem;
-      margin-top:1.2rem;
+    /* ══════════════════════════════════════
+       CONTENT
+    ══════════════════════════════════════ */
+    .app-content {
+      flex: 1;
+      padding: 1.4rem 1.6rem 1.75rem;
+      background: var(--bg-body);
+      overflow: auto;
     }
 
-    .sidebar .nav-link{
-      color:#111827;
-      font-size:.9rem;
-      border-radius:999px;
-      padding:.55rem .9rem;
-      display:flex;
-      align-items:center;
-      gap:.6rem;
-      margin-bottom:.2rem;
-      text-decoration:none;
+    /* ══════════════════════════════════════
+       TOAST SYSTEM (reemplaza los alerts inline)
+    ══════════════════════════════════════ */
+    .gp-toast-dock {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: .45rem;
+      pointer-events: none;
+      max-width: 380px;
     }
-    .sidebar .nav-link i{
-      font-size:1.05rem;
-      color:#9ca3af;
+    .gp-toast {
+      background: var(--bg-surface);
+      border-radius: var(--r-lg);
+      border: 1px solid var(--gp-line);
+      box-shadow: var(--gp-shadow-lg);
+      padding: .85rem 1rem;
+      display: flex;
+      align-items: flex-start;
+      gap: .7rem;
+      pointer-events: all;
+      animation: toast-in .28s var(--ease-spring) both;
+      overflow: hidden;
+      position: relative;
     }
-    .sidebar .nav-link.active{
-      background:var(--gp-green-pill);
-      color:#064e3b;
-      font-weight:500;
+    .gp-toast::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 4px;
+      border-radius: var(--r-lg) 0 0 var(--r-lg);
     }
-    .sidebar .nav-link.active i{
-      color:#047857;
+    .gp-toast.t-success::before { background: #22c55e; }
+    .gp-toast.t-danger::before  { background: #ef4444; }
+    .gp-toast.t-warning::before { background: #f59e0b; }
+    .gp-toast.t-info::before    { background: #3b82f6; }
+
+    .gp-toast.hide { animation: toast-out .22s var(--ease-out) both; }
+
+    @keyframes toast-in {
+      from { opacity: 0; transform: translateX(100%) scale(.9); }
+      to   { opacity: 1; transform: translateX(0) scale(1); }
     }
-    .sidebar .nav-link:hover{
-      background:#f3f4ff;
-      color:#111827;
+    @keyframes toast-out {
+      from { opacity: 1; transform: translateX(0) scale(1); max-height: 120px; margin-bottom: 0; padding: .85rem 1rem; }
+      to   { opacity: 0; transform: translateX(40px) scale(.95); max-height: 0; margin-bottom: -.45rem; padding: 0 1rem; }
     }
 
-    .sidebar-footer{
-      margin-top:auto;
-      font-size:.75rem;
-      color:#9ca3af;
-      padding-top:1rem;
-      border-top:1px solid var(--gp-line);
+    .gp-toast-icon { font-size: 1.05rem; flex-shrink: 0; margin-top: .1rem; padding-left: .2rem; }
+    .gp-toast-icon.t-success { color: #16a34a; }
+    .gp-toast-icon.t-danger  { color: #dc2626; }
+    .gp-toast-icon.t-warning { color: #d97706; }
+    .gp-toast-icon.t-info    { color: #2563eb; }
+
+    .gp-toast-body { flex: 1; font-size: .84rem; line-height: 1.45; color: var(--gp-ink); }
+    .gp-toast-close {
+      background: none; border: none; padding: 0;
+      color: var(--gp-muted-2); cursor: pointer; line-height: 1;
+      font-size: 1rem; flex-shrink: 0;
+      transition: color var(--t-fast);
+    }
+    .gp-toast-close:hover { color: var(--gp-ink); }
+
+    /* ══════════════════════════════════════
+       GLOBAL UTILITY — usado en módulos
+    ══════════════════════════════════════ */
+    .card-panel {
+      background: var(--bg-surface);
+      border-radius: var(--r-lg);
+      border: 1px solid var(--gp-line);
+      box-shadow: var(--gp-shadow-xs);
+    }
+    .card-panel-header {
+      padding: .75rem 1.1rem;
+      border-bottom: 1px solid var(--gp-line);
+      display: flex; align-items: center; justify-content: space-between;
+      font-weight: 600; font-size: .88rem;
     }
 
-    .app-content{
-      flex:1;
-      padding:1.5rem 1.75rem 1.75rem;
-      background:var(--bg-body);
-      overflow:auto;
-    }
+    /* Botones redondeados — clase genérica */
+    .btn-pill { border-radius: var(--r-pill) !important; }
 
-    @media (max-width: 992px){
-      .topbar{
-        padding:0 1rem;
+    /* ══════════════════════════════════════
+       RESPONSIVE
+    ══════════════════════════════════════ */
+    @media (max-width: 992px) {
+      .topbar { padding: 0 1rem; height: 56px; }
+      .app-main { flex-direction: column; }
+      .sidebar {
+        width: 100%; flex-direction: row; overflow-x: auto;
+        border-right: none; border-bottom: 1px solid var(--gp-line);
+        padding: .4rem .75rem; gap: .25rem;
       }
-      .app-main{
-        flex-direction:column;
-      }
-      .sidebar{
-        width:100%;
-        flex-direction:row;
-        overflow-x:auto;
-        border-right:none;
-        border-bottom:1px solid var(--gp-line);
-      }
-      .sidebar-footer{
-        display:none;
-      }
+      .sidebar > div { display: flex; align-items: center; gap: .2rem; }
+      .nav-section-label { display: none; }
+      .sidebar .nav-link { margin-bottom: 0; white-space: nowrap; border-radius: var(--r-sm); }
+      .sidebar-footer { display: none; }
+      .app-content { padding: 1rem 1rem 1.5rem; }
+      .gp-toast-dock { bottom: 1rem; right: 1rem; left: 1rem; max-width: none; }
     }
   </style>
 
@@ -252,89 +400,113 @@
 </head>
 <body>
 
+<!-- Toast dock (mensajes Django → toasts flotantes) -->
+<div class="gp-toast-dock" id="toast-dock" aria-live="polite"></div>
+
 <div class="app-root">
 
-  <!-- BARRA SUPERIOR -->
+  <!-- ── TOPBAR ── -->
   <header class="topbar">
     <div class="brand-wrap">
-      <button class="btn btn-light border-0 d-lg-none me-1">
-        <i class="bi bi-list"></i>
+      <button class="btn btn-light border-0 d-lg-none me-1 p-1" style="border-radius:var(--r-sm);">
+        <i class="bi bi-list fs-5"></i>
       </button>
       <div class="brand-icon">
-        <i class="bi bi-droplet-half"></i>
+        <i class="bi bi-activity"></i>
       </div>
       <div class="brand-text">
         <div class="title">VacWeb</div>
-        <div class="sub">Panel operativo</div>
+        <div class="sub">Control ganadero</div>
       </div>
     </div>
 
-
-    <div class="d-flex align-items-center gap-3">
-      <a href="{% url 'alertas:index' %}" class="btn-icon position-relative text-decoration-none">
-        <i class="bi bi-bell" style="color:#0b6b2b;"></i>
-        <span id="badge-alertas" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
-              style="font-size:.6rem;display:none;">0</span>
+    <div class="d-flex align-items-center gap-2">
+      <!-- RFID Scan -->
+      <a href="{% url 'animals:rfid_scan' %}" class="btn-icon" title="Escanear RFID (F9)"
+         style="position:relative;" id="btn-rfid-scan">
+        <i class="bi bi-upc-scan" style="font-size:.95rem;"></i>
       </a>
 
+      <!-- Bell -->
+      <a href="{% url 'alertas:index' %}" class="btn-icon position-relative" title="Alertas">
+        <i class="bi bi-bell" style="font-size:.95rem;"></i>
+        <span id="badge-alertas"
+              class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+              style="font-size:.55rem; display:none;">0</span>
+      </a>
+
+      <!-- User dropdown -->
       <div class="dropdown">
-        <button class="btn user-chip dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+        <button class="btn user-chip dropdown-toggle border-0 p-0"
+                type="button" data-bs-toggle="dropdown" aria-expanded="false">
           <div class="user-avatar">
-            {% if request.user.first_name %}
-              {{ request.user.first_name|first|upper }}
-            {% else %}
-              {{ request.user.username|default:"U"|first|upper }}
-            {% endif %}
+            {% if request.user.first_name %}{{ request.user.first_name|first|upper }}
+            {% else %}{{ request.user.username|default:"U"|first|upper }}{% endif %}
           </div>
-          <div class="user-meta">
-            <div class="name">
-              {{ request.user.get_full_name|default:request.user.username }}
-            </div>
-            <div class="role">
-              Admin
-            </div>
+          <div class="user-meta d-none d-sm-block">
+            <div class="name">{{ request.user.get_full_name|default:request.user.username }}</div>
+            <div class="role">Admin</div>
           </div>
+          <i class="bi bi-chevron-down text-muted d-none d-sm-block" style="font-size:.65rem;"></i>
         </button>
-        <ul class="dropdown-menu dropdown-menu-end">
-          <li><a class="dropdown-item" href="#">Mi perfil</a></li>
-          <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="{% url 'authz:logout' %}">Cerrar sesión</a></li>
+        <ul class="dropdown-menu dropdown-menu-end mt-1">
+          <li>
+            <div class="px-3 py-2" style="border-bottom:1px solid var(--gp-line); margin-bottom:.25rem;">
+              <div style="font-size:.82rem; font-weight:600;">{{ request.user.get_full_name|default:request.user.username }}</div>
+              <div style="font-size:.72rem; color:var(--gp-muted);">{{ request.user.email|default:"" }}</div>
+            </div>
+          </li>
+          <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2 text-muted"></i>Mi perfil</a></li>
+          <li><hr class="dropdown-divider my-1"></li>
+          <li>
+            <a class="dropdown-item text-danger" href="{% url 'authz:logout' %}">
+              <i class="bi bi-box-arrow-right me-2"></i>Cerrar sesión
+            </a>
+          </li>
         </ul>
       </div>
     </div>
   </header>
 
-  <!-- LAYOUT PRINCIPAL -->
+  <!-- ── LAYOUT PRINCIPAL ── -->
   <div class="app-main">
 
-    <!-- Sidebar blanco, como en el diseño -->
+    <!-- Sidebar -->
     <aside class="sidebar">
       <div>
         <div class="nav-section-label">Principal</div>
-        <a class="nav-link {% if request.resolver_match.app_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard:index' %}">
-          <i class="bi bi-grid-1x2"></i>
+
+        <a class="nav-link {% if request.resolver_match.app_name == 'dashboard' %}active{% endif %}"
+           href="{% url 'dashboard:index' %}">
+          <i class="bi bi-grid-1x2-fill"></i>
           <span>Dashboard</span>
         </a>
-        <a class="nav-link {% if request.resolver_match.app_name == 'animals' %}active{% endif %}" href="{% url 'animals:list' %}">
-          <i class="bi bi-tag"></i>
+
+        <a class="nav-link {% if request.resolver_match.app_name == 'animals' %}active{% endif %}"
+           href="{% url 'animals:list' %}">
+          <i class="bi bi-tag-fill"></i>
           <span>Animales</span>
         </a>
+
+        <a class="nav-link {% if request.resolver_match.url_name == 'rfid_scan' %}active{% endif %}"
+           href="{% url 'animals:rfid_scan' %}" title="F9">
+          <i class="bi bi-upc-scan"></i>
+          <span>Escanear RFID</span>
+          <span class="badge bg-secondary ms-auto" style="font-size:.55rem;letter-spacing:.02em;font-weight:600;">F9</span>
+        </a>
+
         <a class="nav-link {% if request.resolver_match.app_name == 'eventos' %}active{% endif %}"
            href="{% url 'eventos:list' %}">
           <i class="bi bi-activity"></i>
           <span>Eventos</span>
         </a>
-        {% if 'eventos.write' in user_perms %}
-        <a class="nav-link {% if request.resolver_match.url_name == 'masivo' %}active{% endif %}"
-           href="{% url 'eventos:masivo' %}">
-          <i class="bi bi-check2-all"></i>
-          <span>Evento masivo</span>
-        </a>
-        {% endif %}
-        <a class="nav-link {% if request.resolver_match.app_name == 'pesajes' %}active{% endif %}" href="{% url 'pesajes:list' %}">
-          <i class="bi bi-graph-up"></i>
+
+        <a class="nav-link {% if request.resolver_match.app_name == 'pesajes' %}active{% endif %}"
+           href="{% url 'pesajes:list' %}">
+          <i class="bi bi-graph-up-arrow"></i>
           <span>Pesajes</span>
         </a>
+
         {% if 'transacciones.read' in user_perms %}
         <a class="nav-link {% if request.resolver_match.app_name == 'transacciones' %}active{% endif %}"
            href="{% url 'transacciones:list' %}">
@@ -342,39 +514,54 @@
           <span>Transacciones</span>
         </a>
         {% endif %}
+
         <a class="nav-link {% if request.resolver_match.app_name == 'reportes' %}active{% endif %}"
            href="{% url 'reportes:index' %}">
-          <i class="bi bi-bar-chart-line"></i>
+          <i class="bi bi-bar-chart-line-fill"></i>
           <span>Reportes</span>
         </a>
+
         {% if 'alertas.view_alertas' in user_perms %}
         <a class="nav-link {% if request.resolver_match.app_name == 'alertas' %}active{% endif %}"
            href="{% url 'alertas:index' %}">
-          <i class="bi bi-bell"></i>
+          <i class="bi bi-bell-fill"></i>
           <span>Alertas</span>
           <span id="badge-alertas-sidebar" class="badge bg-danger ms-auto" style="display:none;"></span>
         </a>
         {% endif %}
 
+        {% if 'auditoria.read' in user_perms %}
+        <a class="nav-link {% if request.resolver_match.app_name == 'auditoria' %}active{% endif %}"
+           href="{% url 'auditoria:index' %}">
+          <i class="bi bi-journal-text"></i>
+          <span>Auditoría</span>
+        </a>
+        {% endif %}
+
         <div class="nav-section-label">Administración</div>
-        <a class="nav-link {% if request.resolver_match.app_name == 'potreros' %}active{% endif %}" href="{% url 'potreros:list' %}">
-          <i class="bi bi-grid-3x3-gap"></i>
+
+        <a class="nav-link {% if request.resolver_match.app_name == 'potreros' %}active{% endif %}"
+           href="{% url 'potreros:list' %}">
+          <i class="bi bi-grid-3x3-gap-fill"></i>
           <span>Lotes / Potreros</span>
         </a>
+
         {% if 'users.read' in user_perms %}
         <a class="nav-link {% if request.resolver_match.url_name == 'user_list' or request.resolver_match.url_name == 'user_create' or request.resolver_match.url_name == 'user_edit' %}active{% endif %}"
            href="{% url 'authz:user_list' %}">
-          <i class="bi bi-people"></i>
+          <i class="bi bi-people-fill"></i>
           <span>Usuarios</span>
         </a>
         {% endif %}
+
         {% if 'roles.read' in user_perms %}
         <a class="nav-link {% if request.resolver_match.url_name == 'role_list' or request.resolver_match.url_name == 'role_create' or request.resolver_match.url_name == 'role_edit' %}active{% endif %}"
            href="{% url 'authz:role_list' %}">
-          <i class="bi bi-shield-check"></i>
+          <i class="bi bi-shield-fill-check"></i>
           <span>Roles y Permisos</span>
         </a>
         {% endif %}
+
         <a class="nav-link" href="#">
           <i class="bi bi-question-circle"></i>
           <span>Ayuda</span>
@@ -382,32 +569,92 @@
       </div>
 
       <div class="sidebar-footer">
-        © {{ now|date:"Y" }} VacWeb · Demo
+        VacWeb · {{ now|date:"Y" }}
       </div>
     </aside>
 
-    <!-- Contenido -->
+    <!-- Contenido principal -->
     <main class="app-content">
-      {% if messages %}
-        <div class="px-3 pt-3">
-          {% for m in messages %}
-            <div class="alert alert-{{ m.tags }} alert-dismissible fade show" role="alert">
-              {{ m }}
-              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
-            </div>
-          {% endfor %}
-        </div>
-      {% endif %}
       {% block content %}{% endblock %}
     </main>
 
   </div>
 </div>
 
+<!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-{% if request.user.is_authenticated %}
+
+<!-- Toast system + badge alertas -->
 <script>
 (function () {
+  "use strict";
+
+  /* ── TOAST SYSTEM ── */
+  var ICONS = {
+    success: '<i class="bi bi-check-circle-fill gp-toast-icon t-success"></i>',
+    danger:  '<i class="bi bi-x-circle-fill gp-toast-icon t-danger"></i>',
+    warning: '<i class="bi bi-exclamation-triangle-fill gp-toast-icon t-warning"></i>',
+    info:    '<i class="bi bi-info-circle-fill gp-toast-icon t-info"></i>',
+    error:   '<i class="bi bi-x-circle-fill gp-toast-icon t-danger"></i>',
+  };
+
+  function showToast(msg, type, duration) {
+    type = type || 'info';
+    duration = duration || 4500;
+    var tClass = type === 'error' ? 'danger' : type;
+    var dock = document.getElementById('toast-dock');
+    if (!dock) return;
+
+    var el = document.createElement('div');
+    el.className = 'gp-toast t-' + tClass;
+    el.innerHTML =
+      (ICONS[type] || ICONS.info) +
+      '<div class="gp-toast-body">' + msg + '</div>' +
+      '<button class="gp-toast-close" aria-label="Cerrar">' +
+        '<i class="bi bi-x"></i>' +
+      '</button>';
+
+    dock.appendChild(el);
+
+    var close = el.querySelector('.gp-toast-close');
+    function dismiss() {
+      el.classList.add('hide');
+      el.addEventListener('animationend', function () { el.remove(); }, { once: true });
+    }
+    close.addEventListener('click', dismiss);
+    setTimeout(dismiss, duration);
+  }
+
+  /* Exponer globalmente para uso en módulos */
+  window.gpToast = showToast;
+
+  /* ── Convertir mensajes Django en toasts ── */
+  var DJANGO_MESSAGES = [
+    {% for m in messages %}{msg: "{{ m|escapejs }}", tags: "{{ m.tags|escapejs }}"},{% endfor %}
+  ];
+
+  /* Pequeño retraso para que la animación de la página se vea primero */
+  if (DJANGO_MESSAGES.length) {
+    setTimeout(function () {
+      DJANGO_MESSAGES.forEach(function (d) {
+        var type = d.tags.split(' ').find(function(t){
+          return ['success','danger','warning','info','error'].indexOf(t) !== -1;
+        }) || 'info';
+        showToast(d.msg, type);
+      });
+    }, 250);
+  }
+
+  /* ── Atajo de teclado F9 → Escáner RFID ── */
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'F9') {
+      e.preventDefault();
+      window.location.href = "{% url 'animals:rfid_scan' %}";
+    }
+  });
+
+  {% if request.user.is_authenticated %}
+  /* ── Badge de alertas ── */
   function actualizarBadgeAlertas() {
     fetch("{% url 'alertas:api_pendientes' %}")
       .then(function (r) { return r.json(); })
@@ -422,9 +669,11 @@
   }
   actualizarBadgeAlertas();
   setInterval(actualizarBadgeAlertas, 60000);
+  {% endif %}
+
 })();
 </script>
-{% endif %}
+
 {% block extra_js %}{% endblock %}
 </body>
 </html>

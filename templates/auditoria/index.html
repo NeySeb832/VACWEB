@@ -1,0 +1,236 @@
+{% extends "base/menu_base.html" %}
+{% block title %}Auditoría · VacWeb{% endblock %}
+
+{% block extra_head %}
+<style>
+  .badge-accion { font-size: .72rem; font-weight: 600; padding: .28rem .65rem; border-radius: 999px; }
+  .badge-CREAR      { background: #dcfce7; color: #166534; }
+  .badge-EDITAR     { background: #fef9c3; color: #713f12; }
+  .badge-ELIMINAR   { background: #fee2e2; color: #991b1b; }
+  .badge-ACCEDER    { background: #dbeafe; color: #1e40af; }
+  .badge-ANULAR     { background: #fce7f3; color: #9d174d; }
+  .badge-CONFIGURAR { background: #ede9fe; color: #5b21b6; }
+
+  .stat-card { border-radius: 12px; padding: .9rem 1.2rem; }
+  .filter-row .form-select, .filter-row .form-control { font-size: .85rem; }
+  .table-audit td, .table-audit th { vertical-align: middle; font-size: .85rem; }
+  .row-link { cursor: pointer; }
+  .row-link:hover td { background: #f0fdf4; }
+  pre.delta { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+              padding: .75rem; font-size: .78rem; max-height: 220px; overflow-y: auto; margin: 0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-start justify-content-between mb-3 flex-wrap gap-2">
+  <div>
+    <h4 class="fw-semibold mb-0" style="color:var(--gp-ink);">
+      <i class="bi bi-journal-text me-2" style="color:var(--gp-green);"></i>Auditoría – Bitácora de Operaciones
+    </h4>
+    <p class="text-muted mb-0" style="font-size:.83rem;">Registro completo de todas las acciones realizadas en el sistema</p>
+  </div>
+  <a href="{% url 'auditoria:exportar_csv' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}"
+     class="btn btn-sm btn-outline-success {% if sin_resultados or error_rango %}disabled{% endif %}">
+    <i class="bi bi-download me-1"></i>Exportar CSV
+  </a>
+</div>
+
+{# ── Estadísticas rápidas ─────────────────────────────────────────────────── #}
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3">
+    <div class="stat-card bg-white border">
+      <div class="text-muted" style="font-size:.75rem;">Total registros</div>
+      <div class="fw-bold fs-5">{{ stats.total }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="background:#dcfce7;">
+      <div class="text-muted" style="font-size:.75rem;">Creaciones</div>
+      <div class="fw-bold fs-5 text-success">{{ stats.creaciones }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="background:#fef9c3;">
+      <div class="text-muted" style="font-size:.75rem;">Ediciones</div>
+      <div class="fw-bold fs-5" style="color:#713f12;">{{ stats.ediciones }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="background:#fee2e2;">
+      <div class="text-muted" style="font-size:.75rem;">Eliminaciones</div>
+      <div class="fw-bold fs-5 text-danger">{{ stats.eliminaciones }}</div>
+    </div>
+  </div>
+</div>
+
+{# ── Filtros ───────────────────────────────────────────────────────────────── #}
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-body py-3">
+    <form method="get" class="filter-row">
+      <div class="row g-2 align-items-end">
+
+        <div class="col-12 col-md-4">
+          <input type="text" name="q" value="{{ filtros.q }}"
+                 class="form-control form-control-sm"
+                 placeholder="Buscar por usuario, entidad o acción…">
+        </div>
+
+        <div class="col-6 col-md-2">
+          <select name="accion" class="form-select form-select-sm">
+            <option value="">Todas las acciones</option>
+            {% for val, label in acciones_disponibles %}
+              <option value="{{ val }}" {% if filtros.accion == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-6 col-md-2">
+          <select name="entidad" class="form-select form-select-sm">
+            <option value="">Todas las entidades</option>
+            {% for ent in entidades_disponibles %}
+              <option value="{{ ent }}" {% if filtros.entidad == ent %}selected{% endif %}>{{ ent }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-6 col-md-2">
+          <input type="date" name="desde" value="{{ filtros.desde }}"
+                 class="form-control form-control-sm {% if error_rango %}is-invalid{% endif %}"
+                 placeholder="Desde">
+        </div>
+
+        <div class="col-6 col-md-2">
+          <input type="date" name="hasta" value="{{ filtros.hasta }}"
+                 class="form-control form-control-sm {% if error_rango %}is-invalid{% endif %}"
+                 placeholder="Hasta">
+        </div>
+
+        <div class="col-12 d-flex gap-2">
+          <button type="submit" class="btn btn-sm btn-success">
+            <i class="bi bi-search me-1"></i>Buscar
+          </button>
+          <a href="{% url 'auditoria:index' %}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-x-circle me-1"></i>Limpiar filtros
+          </a>
+        </div>
+      </div>
+
+      {% if error_rango %}
+      <div class="alert alert-danger py-2 mt-2 mb-0" style="font-size:.83rem;">
+        <i class="bi bi-exclamation-triangle me-1"></i>
+        El rango de fechas no es válido: "Desde" no puede ser posterior a "Hasta".
+      </div>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+{# ── Tabla ─────────────────────────────────────────────────────────────────── #}
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-white border-bottom py-2 d-flex align-items-center justify-content-between">
+    <span class="fw-semibold" style="font-size:.9rem;">
+      <i class="bi bi-list-ul me-1 text-success"></i>
+      {% if error_rango %}
+        Corrija el rango de fechas para ver resultados
+      {% elif sin_resultados %}
+        No se encontraron registros para los filtros seleccionados
+      {% else %}
+        {{ total }} registro{{ total|pluralize }} encontrado{{ total|pluralize }}
+      {% endif %}
+    </span>
+    <span class="text-muted" style="font-size:.78rem;">
+      Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+    </span>
+  </div>
+
+  {% if sin_resultados or error_rango %}
+  <div class="card-body text-center py-5 text-muted">
+    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+    {% if error_rango %}
+      Corrija el rango de fechas e intente de nuevo.
+    {% else %}
+      No se encontraron registros de auditoría para los filtros seleccionados.
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="table-responsive">
+    <table class="table table-hover table-audit mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Fecha/Hora</th>
+          <th>Usuario</th>
+          <th>Acción</th>
+          <th>Entidad</th>
+          <th>ID</th>
+          <th>Módulo</th>
+          <th>Resumen</th>
+          <th class="text-center">Detalle</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in page_obj %}
+        <tr class="row-link" onclick="window.location='{% url 'auditoria:detalle' r.pk %}';">
+          <td class="text-nowrap" style="color:var(--gp-muted);font-size:.8rem;">
+            {{ r.fecha|date:"d/m/Y" }}<br>
+            <span style="font-size:.75rem;">{{ r.fecha|time:"H:i:s" }}</span>
+          </td>
+          <td>
+            <div class="fw-medium" style="font-size:.85rem;">{{ r.usuario_nombre }}</div>
+          </td>
+          <td>
+            <span class="badge-accion badge-{{ r.accion }}">{{ r.accion }}</span>
+          </td>
+          <td>{{ r.entidad }}</td>
+          <td class="text-muted" style="font-size:.8rem;">{{ r.entidad_id|truncatechars:18 }}</td>
+          <td>
+            {% if r.modulo_origen %}
+              <span class="badge bg-light text-dark border" style="font-size:.72rem;">{{ r.modulo_origen }}</span>
+            {% else %}—{% endif %}
+          </td>
+          <td style="max-width:260px;">
+            <span class="text-truncate d-inline-block" style="max-width:240px;" title="{{ r.resumen }}">
+              {{ r.resumen|truncatechars:70 }}
+            </span>
+          </td>
+          <td class="text-center">
+            <a href="{% url 'auditoria:detalle' r.pk %}"
+               class="btn btn-sm btn-outline-secondary py-0 px-2"
+               onclick="event.stopPropagation();">
+              <i class="bi bi-eye"></i> Ver
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {# Paginación #}
+  {% if page_obj.paginator.num_pages > 1 %}
+  <div class="card-footer bg-white border-top py-2 d-flex justify-content-center">
+    <nav>
+      <ul class="pagination pagination-sm mb-0">
+        {% if page_obj.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?{% if filtros.q %}q={{ filtros.q }}&{% endif %}{% if filtros.accion %}accion={{ filtros.accion }}&{% endif %}{% if filtros.entidad %}entidad={{ filtros.entidad }}&{% endif %}{% if filtros.desde %}desde={{ filtros.desde }}&{% endif %}{% if filtros.hasta %}hasta={{ filtros.hasta }}&{% endif %}page={{ page_obj.previous_page_number }}">
+              <i class="bi bi-chevron-left"></i>
+            </a>
+          </li>
+        {% endif %}
+        <li class="page-item disabled">
+          <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+        </li>
+        {% if page_obj.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?{% if filtros.q %}q={{ filtros.q }}&{% endif %}{% if filtros.accion %}accion={{ filtros.accion }}&{% endif %}{% if filtros.entidad %}entidad={{ filtros.entidad }}&{% endif %}{% if filtros.desde %}desde={{ filtros.desde }}&{% endif %}{% if filtros.hasta %}hasta={{ filtros.hasta }}&{% endif %}page={{ page_obj.next_page_number }}">
+              <i class="bi bi-chevron-right"></i>
+            </a>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
+  {% endif %}
+</div>
+{% endblock %}

@@ -2,9 +2,12 @@
 """Vistas del módulo de Transacciones Comerciales (CU-006).
 Compras, Ventas y Sacrificios con impacto atómico en el inventario de animales.
 """
+import json
 import logging
 from datetime import datetime, date as _date
+from decimal import Decimal, InvalidOperation
 
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db import transaction
@@ -19,7 +22,7 @@ from authz.decorators import require_perm
 from authz.models import AuditLog
 from authz.utils import has_perm_code
 
-from .forms import AnulacionTransaccionForm, AnimalInlineForm, TransaccionForm
+from .forms import AnulacionTransaccionForm, AnimalInlineForm, TransaccionForm, TransaccionMasivaForm
 from .models import Transaccion
 
 logger = logging.getLogger(__name__)
@@ -351,3 +354,130 @@ def transaccion_historial_animal(request, animal_pk: int):
         "today":                   str(_date.today()),
     }
     return render(request, "transacciones/historial_animal.html", ctx)
+
+
+# ---------------------------------------------------------------------------
+# Vista 6: Transacción Masiva (CU-006 Masivo)
+# ---------------------------------------------------------------------------
+
+def _ctx_masiva(form, animales, errores=None, animal_ids=None, valores_post_raw=None):
+    """Construye el contexto de error para transaccion_masiva."""
+    animal_ids   = animal_ids or []
+    valores_post = valores_post_raw or {}
+    selected_ids = [str(pk) for pk in animal_ids]
+    return {
+        "form":              form,
+        "animales":          animales,
+        "today":             str(_date.today()),
+        "errores":           errores or [],
+        "selected_ids":      set(selected_ids),
+        "selected_ids_json": json.dumps(selected_ids),
+        "valores_post":      valores_post,
+        "valores_post_json": json.dumps(valores_post),
+    }
+
+
+@login_required
+@require_perm("transacciones.write")
+def transaccion_masiva(request):
+    """Aplicar una misma transacción (Venta o Sacrificio) a varios animales a la vez.
+
+    GET  → Muestra formulario con campos compartidos y tabla de animales activos.
+    POST → Valida, crea una Transaccion por cada animal seleccionado (atomic),
+           actualiza estado del animal y redirige al listado con mensaje de éxito.
+    """
+    animales_activos = (
+        Animal.objects
+        .filter(estado=Animal.Estado.ACTIVO)
+        .select_related("potrero")
+        .order_by("rfid", "nombre")
+    )
+
+    if request.method == "GET":
+        form = TransaccionMasivaForm()
+        return render(request, "transacciones/masiva.html",
+                      _ctx_masiva(form, animales_activos))
+
+    # ── POST ────────────────────────────────────────────────────────────────
+    form       = TransaccionMasivaForm(request.POST)
+    animal_ids = request.POST.getlist("animal_ids")
+    errores    = []
+
+    # Reconstruir valores_post para repintar el formulario si hay error
+    valores_post_raw = {pk: request.POST.get(f"valor_{pk}", "") for pk in animal_ids}
+
+    if not form.is_valid():
+        errores.append("Corrija los errores en el formulario de datos compartidos.")
+
+    if not animal_ids:
+        errores.append("Debe seleccionar al menos un animal.")
+
+    # Validar valor_cop individual por animal
+    valores: dict[str, Decimal] = {}
+    for pk in animal_ids:
+        raw = valores_post_raw.get(pk, "").strip()
+        try:
+            valor = Decimal(raw)
+            if valor <= 0:
+                raise ValueError
+            valores[pk] = valor
+        except (ValueError, TypeError, InvalidOperation):
+            errores.append(
+                f"El valor para el animal #{pk} no es válido "
+                "(debe ser un número mayor a cero)."
+            )
+
+    if errores or not form.is_valid():
+        return render(request, "transacciones/masiva.html",
+                      _ctx_masiva(form, animales_activos, errores,
+                                  animal_ids, valores_post_raw))
+
+    tipo           = form.cleaned_data["tipo"]
+    fecha          = form.cleaned_data["fecha"]
+    origen_destino = form.cleaned_data["origen_destino"]
+    observaciones  = form.cleaned_data.get("observaciones", "")
+
+    creadas = 0
+    try:
+        with transaction.atomic():
+            for pk in animal_ids:
+                try:
+                    animal = Animal.objects.get(pk=pk, estado=Animal.Estado.ACTIVO)
+                except Animal.DoesNotExist:
+                    errores.append(
+                        f"El animal #{pk} ya no está disponible "
+                        "(estado inactivo o no existe). No se realizó ningún cambio."
+                    )
+                    raise ValueError("animal_no_disponible")
+
+                t = Transaccion(
+                    tipo=tipo,
+                    fecha=fecha,
+                    animal=animal,
+                    origen_destino=origen_destino,
+                    valor_cop=valores[pk],
+                    observaciones=observaciones,
+                    created_by=request.user,
+                )
+                t.full_clean()
+                t.save()
+                t.aplicar_impacto_inventario()
+                creadas += 1
+
+    except ValueError as ve:
+        return render(request, "transacciones/masiva.html",
+                      _ctx_masiva(form, animales_activos, errores,
+                                  animal_ids, valores_post_raw))
+    except Exception as exc:
+        logger.exception("Error inesperado en transacción masiva: %s", exc)
+        return render(request, "transacciones/masiva.html",
+                      _ctx_masiva(form, animales_activos,
+                                  [f"Error inesperado: {exc}"],
+                                  animal_ids, valores_post_raw))
+
+    tipo_display = dict(Transaccion.Tipo.choices).get(tipo, tipo)
+    messages.success(
+        request,
+        f"✓ Se registraron {creadas} transacciones de {tipo_display} exitosamente."
+    )
+    return redirect("transacciones:list")

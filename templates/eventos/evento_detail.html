@@ -489,3 +489,46 @@
 {% endif %}
 
 {% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  "use strict";
+
+  /* ── Limpiar cualquier backdrop residual al cargar la página ── */
+  document.querySelectorAll('.modal-backdrop').forEach(function (el) { el.remove(); });
+  document.body.classList.remove('modal-open');
+  document.body.style.overflow    = '';
+  document.body.style.paddingRight = '';
+
+  /* ── Interceptar submit de formularios dentro de modales ──
+     Problema: cuando el form hace POST y el navegador navega a la nueva URL,
+     Bootstrap no alcanza a terminar la animación de cierre del modal y el
+     backdrop queda visible en la página siguiente (back-forward cache) o
+     incluso en la misma si hubo un redirect instantáneo.
+     Solución: cerrar el modal explícitamente PRIMERO, esperar 'hidden.bs.modal'
+     y recién entonces dejar que el form se envíe.
+  ── */
+  document.querySelectorAll('.modal').forEach(function (modalEl) {
+    var form = modalEl.querySelector('form');
+    if (!form) return;
+
+    form.addEventListener('submit', function (e) {
+      /* Solo interceptamos si Bootstrap tiene una instancia activa */
+      var instance = bootstrap.Modal.getInstance(modalEl);
+      if (!instance) return;  /* deja pasar el submit normal */
+
+      e.preventDefault();     /* detener el envío temporalmente */
+
+      /* Cuando el modal termine de cerrar → enviar el form de verdad */
+      modalEl.addEventListener('hidden.bs.modal', function () {
+        form.submit();
+      }, { once: true });
+
+      instance.hide();        /* cerrar modal (elimina backdrop) */
+    });
+  });
+
+})();
+</script>
+{% endblock %}

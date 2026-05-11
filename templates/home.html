@@ -1,263 +1,964 @@
 {% load static %}
 <!doctype html>
-<html lang="es" data-bs-theme="light">
+<html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>VacWeb · Bienvenido</title>
+  <title>VacWeb · Control Ganadero Profesional</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
   <style>
+    /* ─────────────── TOKENS ─────────────── */
     :root{
-      --gp-green:#0b6b2b;
-      --gp-green-dark:#074e20;
-      --gp-ink:#0e1116;
-      --gp-line:#e6ece7;
+      --green:#0b6b2b; --green-dark:#074e20; --green-mid:#0e8535;
+      --green-soft:#e8f5ec; --green-pale:#f0faf3;
+      --ink:#0e1116; --ink-2:#374151; --muted:#6b7280; --muted-2:#9ca3af;
+      --line:#e5e7eb; --line-2:#f3f4f6;
+      --shadow-sm:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.05);
+      --shadow-md:0 4px 16px rgba(0,0,0,.08),0 2px 6px rgba(0,0,0,.05);
+      --shadow-lg:0 12px 40px rgba(0,0,0,.10),0 4px 12px rgba(0,0,0,.06);
+      --r:14px; --r-lg:20px; --r-pill:999px;
+      --ease-out:cubic-bezier(.25,.46,.45,.94);
     }
-    body{color:#1f2937}
-    .navbar-brand{font-weight:700; letter-spacing:.2px}
-    .brand-dot{width:34px;height:34px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;background:#e9f7ef;color:var(--gp-green);margin-right:.5rem}
+    *{box-sizing:border-box;}
+    html{scroll-behavior:smooth;}
+    body{font-family:"Inter",system-ui,sans-serif;color:var(--ink-2);-webkit-font-smoothing:antialiased;margin:0;}
+
+    /* ─────────────── NAVBAR ─────────────── */
+    .gp-nav{
+      position:sticky; top:0; z-index:1000;
+      background:rgba(255,255,255,.82);
+      backdrop-filter:blur(16px);
+      -webkit-backdrop-filter:blur(16px);
+      border-bottom:1px solid rgba(229,231,235,.7);
+      padding:.75rem 0;
+      transition:background .3s;
+    }
+    .gp-nav .brand{
+      display:flex; align-items:center; gap:.6rem;
+      font-weight:800; font-size:1.15rem; letter-spacing:-.03em;
+      color:var(--ink); text-decoration:none;
+    }
+    .brand-icon{
+      width:38px; height:38px; border-radius:10px;
+      background:linear-gradient(135deg,var(--green-mid),var(--green-dark));
+      display:flex; align-items:center; justify-content:center;
+      color:#fff; font-size:1.1rem;
+      box-shadow:0 2px 8px rgba(11,107,43,.35);
+    }
+    .nav-link-gp{
+      font-size:.88rem; font-weight:500; color:var(--ink-2);
+      text-decoration:none; padding:.3rem .6rem; border-radius:8px;
+      transition:color .15s, background .15s;
+    }
+    .nav-link-gp:hover{color:var(--green); background:var(--green-soft);}
+    .btn-login{
+      background:var(--ink); color:#fff; border:none;
+      padding:.4rem 1.15rem; border-radius:var(--r-pill);
+      font-size:.88rem; font-weight:600; text-decoration:none;
+      transition:opacity .2s, transform .15s;
+      display:inline-flex; align-items:center; gap:.4rem;
+    }
+    .btn-login:hover{opacity:.88; color:#fff; transform:translateY(-1px);}
+
+    /* ─────────────── HERO ─────────────── */
     .hero{
-      position:relative;min-height:72vh;color:#fff;
+      position:relative; overflow:hidden;
       background:
-        linear-gradient(180deg, rgba(7,78,32,.82), rgba(7,78,32,.60)),
+        linear-gradient(160deg, rgba(7,78,32,.88) 0%, rgba(11,107,43,.72) 60%, rgba(14,133,53,.60) 100%),
         url("{% static 'img/hero-ganaderia.jpg' %}") center/cover no-repeat;
+      color:#fff; padding:100px 0 130px;
     }
-    .hero .lead{opacity:.9}
-    .hero-wave{
-      position:absolute;left:0;right:0;bottom:-1px;height:70px;pointer-events:none
+    .hero::after{
+      content:'';
+      position:absolute; inset:0;
+      background:radial-gradient(ellipse 70% 80% at 60% 40%, rgba(255,255,255,.04) 0%, transparent 70%);
+      pointer-events:none;
     }
-    .feature-card{
-      border:1px solid rgba(11,107,43,.08);
-      border-radius:18px; background:#fff;
-      box-shadow:0 10px 30px rgba(7,78,32,.08);
-      transition: transform .2s ease, box-shadow .2s ease;
+
+    /* Animated grain texture overlay */
+    .hero-grain{
+      position:absolute; inset:0; pointer-events:none; opacity:.04;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      animation:grain 8s steps(2) infinite;
     }
-    .feature-card:hover{ transform: translateY(-4px); box-shadow:0 16px 40px rgba(7,78,32,.12)}
-    .feature-icon{
-      width:44px;height:44px;border-radius:12px;
-      display:inline-flex;align-items:center;justify-content:center;
-      background: #ecfdf5; color: var(--gp-green);
-      box-shadow: inset 0 0 0 1px rgba(11,107,43,.1);
+    @keyframes grain{0%,100%{transform:translate(0,0)}10%{transform:translate(-2%,-3%)}30%{transform:translate(3%,2%)}50%{transform:translate(-1%,4%)}70%{transform:translate(4%,-1%)}90%{transform:translate(-3%,3%)}}
+
+    .hero-eyebrow{
+      display:inline-flex; align-items:center; gap:.5rem;
+      background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.2);
+      border-radius:var(--r-pill); padding:.3rem .9rem;
+      font-size:.78rem; font-weight:600; letter-spacing:.04em;
+      text-transform:uppercase; margin-bottom:1.4rem;
+      backdrop-filter:blur(4px);
     }
-    .stat{
-      border-right:1px dashed var(--gp-line)
+    .hero h1{
+      font-size:clamp(2rem,5vw,3.4rem);
+      font-weight:900; line-height:1.08; letter-spacing:-.04em;
+      margin-bottom:1.2rem;
     }
-    .stat:last-child{border-right:0}
-    .tick{color:var(--gp-green)}
-    .footer{border-top:1px solid var(--gp-line)}
+    .hero h1 em{
+      font-style:normal;
+      background:linear-gradient(90deg,#a7f3d0,#6ee7b7);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      background-clip:text;
+    }
+    .hero-lead{font-size:1.05rem; opacity:.88; line-height:1.6; margin-bottom:2rem; max-width:520px;}
+    .btn-hero-primary{
+      background:#fff; color:var(--green-dark); border:none;
+      padding:.7rem 1.6rem; border-radius:var(--r-pill);
+      font-size:.95rem; font-weight:700; text-decoration:none;
+      display:inline-flex; align-items:center; gap:.5rem;
+      box-shadow:0 4px 16px rgba(0,0,0,.18);
+      transition:transform .2s var(--ease-out), box-shadow .2s;
+    }
+    .btn-hero-primary:hover{transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,.22); color:var(--green-dark);}
+    .btn-hero-sec{
+      background:rgba(255,255,255,.12); color:#fff;
+      border:1.5px solid rgba(255,255,255,.35);
+      padding:.7rem 1.5rem; border-radius:var(--r-pill);
+      font-size:.95rem; font-weight:600; text-decoration:none;
+      display:inline-flex; align-items:center; gap:.5rem;
+      backdrop-filter:blur(4px);
+      transition:background .2s, transform .2s var(--ease-out);
+    }
+    .btn-hero-sec:hover{background:rgba(255,255,255,.22); color:#fff; transform:translateY(-2px);}
+
+    /* Mini cards en el hero */
+    .hero-mini-card{
+      background:rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.18);
+      border-radius:var(--r); padding:1rem 1.1rem;
+      backdrop-filter:blur(8px); color:#fff;
+      transition:background .2s, transform .2s var(--ease-out);
+    }
+    .hero-mini-card:hover{background:rgba(255,255,255,.18); transform:translateY(-3px);}
+    .hero-mini-icon{
+      width:36px; height:36px; border-radius:9px;
+      background:rgba(255,255,255,.15); display:flex; align-items:center; justify-content:center;
+      font-size:1.1rem; margin-bottom:.55rem;
+    }
+    .hero-mini-title{font-size:.82rem; font-weight:700; margin-bottom:.15rem;}
+    .hero-mini-sub{font-size:.73rem; opacity:.75;}
+
+    /* Wave separador */
+    .hero-wave{position:absolute;left:0;right:0;bottom:-1px;height:80px;pointer-events:none;}
+
+    /* ─────────────── STATS STRIP ─────────────── */
+    .stats-strip{
+      background:#fff; border-bottom:1px solid var(--line);
+      padding:1.6rem 0;
+    }
+    .stat-item{
+      display:flex; flex-direction:column; align-items:center;
+      border-right:1px solid var(--line); padding:0 1rem;
+    }
+    .stat-item:last-child{border-right:none;}
+    .stat-num{font-size:1.7rem; font-weight:900; color:var(--ink); letter-spacing:-.04em; line-height:1.1;}
+    .stat-label{font-size:.75rem; color:var(--muted); margin-top:.2rem; font-weight:500;}
+    .stat-icon{font-size:1.5rem; color:var(--green); margin-bottom:.2rem;}
+
+    /* ─────────────── SECTION HEADERS ─────────────── */
+    .sec-eyebrow{
+      display:inline-flex; align-items:center; gap:.4rem;
+      background:var(--green-soft); color:var(--green-dark);
+      border:1px solid rgba(11,107,43,.15); border-radius:var(--r-pill);
+      padding:.25rem .85rem; font-size:.74rem; font-weight:700;
+      letter-spacing:.04em; text-transform:uppercase; margin-bottom:.85rem;
+    }
+    .sec-title{font-size:clamp(1.5rem,3vw,2.1rem); font-weight:800; letter-spacing:-.03em; color:var(--ink);}
+    .sec-sub{font-size:.93rem; color:var(--muted); max-width:520px; margin:0 auto;}
+
+    /* ─────────────── FEATURE CARDS ─────────────── */
+    .feat-card{
+      background:#fff; border:1px solid var(--line);
+      border-radius:var(--r-lg); padding:1.6rem;
+      box-shadow:var(--shadow-sm);
+      transition:transform .22s var(--ease-out), box-shadow .22s, border-color .22s;
+      height:100%;
+    }
+    .feat-card:hover{transform:translateY(-5px); box-shadow:var(--shadow-lg); border-color:rgba(11,107,43,.18);}
+    .feat-icon{
+      width:48px; height:48px; border-radius:13px;
+      background:var(--green-soft); color:var(--green);
+      display:flex; align-items:center; justify-content:center;
+      font-size:1.3rem; margin-bottom:1rem;
+      box-shadow:inset 0 0 0 1px rgba(11,107,43,.12);
+    }
+    .feat-card h5{font-size:.95rem; font-weight:700; color:var(--ink); margin-bottom:.6rem;}
+    .feat-list{list-style:none; padding:0; margin:0;}
+    .feat-list li{
+      font-size:.83rem; color:var(--ink-2); padding:.25rem 0;
+      display:flex; align-items:flex-start; gap:.5rem;
+      border-bottom:1px solid var(--line-2);
+    }
+    .feat-list li:last-child{border-bottom:none;}
+    .feat-list .ck{color:var(--green); font-size:.85rem; flex-shrink:0; margin-top:.05rem;}
+
+    /* ─────────────── FLUJO ─────────────── */
+    .step-card{
+      background:#fff; border:1px solid var(--line);
+      border-radius:var(--r-lg); padding:1.4rem 1.2rem;
+      position:relative; box-shadow:var(--shadow-sm);
+      transition:transform .2s var(--ease-out), box-shadow .2s;
+    }
+    .step-card:hover{transform:translateY(-3px); box-shadow:var(--shadow-md);}
+    .step-num{
+      width:36px; height:36px; border-radius:50%;
+      background:linear-gradient(135deg,var(--green-mid),var(--green-dark));
+      color:#fff; font-weight:800; font-size:.9rem;
+      display:flex; align-items:center; justify-content:center;
+      box-shadow:0 3px 10px rgba(11,107,43,.35);
+      margin-bottom:.75rem;
+    }
+    .step-card h6{font-size:.88rem; font-weight:700; color:var(--ink); margin-bottom:.35rem;}
+    .step-card p{font-size:.8rem; color:var(--muted); margin:0;}
+    .step-connector{
+      position:absolute; top:50%; right:-1.1rem;
+      transform:translateY(-50%);
+      color:var(--muted-2); font-size:.8rem;
+      z-index:1;
+    }
+
+    /* Role badges */
+    .role-badge{
+      display:inline-flex; align-items:center; gap:.3rem;
+      background:var(--green-soft); border:1px solid rgba(11,107,43,.15);
+      color:var(--green-dark); border-radius:var(--r-pill);
+      padding:.2rem .65rem; font-size:.73rem; font-weight:600;
+    }
+
+    /* ─────────────── SOPORTE ─────────────── */
+    .support-section{background:linear-gradient(180deg,var(--green-pale) 0%,#fff 100%);}
+
+    .contact-card{
+      background:#fff; border:1px solid var(--line);
+      border-radius:var(--r-lg); padding:1.3rem 1.4rem;
+      display:flex; align-items:flex-start; gap:1rem;
+      box-shadow:var(--shadow-sm);
+      transition:transform .2s var(--ease-out), box-shadow .2s, border-color .2s;
+      text-decoration:none; color:inherit;
+    }
+    .contact-card:hover{transform:translateY(-3px); box-shadow:var(--shadow-md); border-color:rgba(11,107,43,.2); color:inherit;}
+    .contact-icon{
+      width:46px; height:46px; border-radius:12px; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center; font-size:1.3rem;
+    }
+    .contact-icon-green{background:var(--green-soft); color:var(--green);}
+    .contact-icon-wa{background:#dcfce7; color:#15803d;}
+    .contact-icon-clock{background:#eff6ff; color:#1d4ed8;}
+    .contact-icon-mail{background:#fef3c7; color:#b45309;}
+    .contact-title{font-size:.88rem; font-weight:700; color:var(--ink); margin-bottom:.2rem;}
+    .contact-val{font-size:.82rem; color:var(--muted);}
+    .contact-val a{color:var(--green); text-decoration:none; font-weight:600;}
+    .contact-val a:hover{text-decoration:underline;}
+
+    /* FAQ Accordion */
+    .faq-accordion .accordion-button{
+      font-size:.88rem; font-weight:600; color:var(--ink);
+      background:#fff; box-shadow:none;
+      padding:.9rem 1.1rem;
+    }
+    .faq-accordion .accordion-button:not(.collapsed){
+      color:var(--green-dark); background:var(--green-soft);
+    }
+    .faq-accordion .accordion-button::after{
+      filter:none;
+    }
+    .faq-accordion .accordion-button:not(.collapsed)::after{
+      filter:invert(30%) sepia(100%) saturate(400%) hue-rotate(90deg);
+    }
+    .faq-accordion .accordion-item{
+      border:1px solid var(--line); border-radius:var(--r) !important;
+      margin-bottom:.5rem; overflow:hidden;
+    }
+    .faq-accordion .accordion-body{font-size:.83rem; color:var(--ink-2); line-height:1.6; padding:.75rem 1.1rem 1rem;}
+
+    /* Horario table */
+    .hours-row{
+      display:flex; justify-content:space-between; align-items:center;
+      padding:.45rem 0; border-bottom:1px solid var(--line-2);
+      font-size:.82rem;
+    }
+    .hours-row:last-child{border-bottom:none;}
+    .hours-day{font-weight:600; color:var(--ink);}
+    .hours-time{color:var(--muted);}
+    .hours-badge{
+      font-size:.68rem; font-weight:700; padding:.15rem .55rem;
+      border-radius:var(--r-pill);
+    }
+    .badge-open{background:#dcfce7; color:#166534;}
+    .badge-closed{background:#fee2e2; color:#991b1b;}
+
+    /* Status indicator */
+    .status-dot{
+      width:8px; height:8px; border-radius:50%; background:#22c55e;
+      display:inline-block; margin-right:.35rem;
+      box-shadow:0 0 0 3px rgba(34,197,94,.2);
+      animation:pulse-dot 2s ease infinite;
+    }
+    @keyframes pulse-dot{0%,100%{box-shadow:0 0 0 3px rgba(34,197,94,.2)}50%{box-shadow:0 0 0 6px rgba(34,197,94,.08)}}
+
+    /* ─────────────── CTA ─────────────── */
+    .cta-section{
+      background:linear-gradient(135deg,var(--green-dark) 0%,var(--green-mid) 100%);
+      position:relative; overflow:hidden;
+    }
+    .cta-section::before{
+      content:'';position:absolute;inset:0;
+      background:radial-gradient(ellipse 60% 80% at 80% 50%,rgba(255,255,255,.07),transparent);
+      pointer-events:none;
+    }
+    .cta-section h2{font-size:clamp(1.6rem,3vw,2.2rem); font-weight:900; letter-spacing:-.04em;}
+
+    /* ─────────────── FOOTER ─────────────── */
+    .gp-footer{background:var(--ink); color:rgba(255,255,255,.6);}
+    .footer-brand{font-weight:800; font-size:1.05rem; color:#fff; letter-spacing:-.02em;}
+    .footer-link{color:rgba(255,255,255,.55); text-decoration:none; font-size:.82rem; transition:color .15s;}
+    .footer-link:hover{color:#fff;}
+    .footer-divider{border-color:rgba(255,255,255,.1);}
+
+    /* ─────────────── UTILS ─────────────── */
+    .bg-section{background:#f9fafb;}
+    section{scroll-margin-top:72px;}
+
+    @media(max-width:768px){
+      .hero{padding:72px 0 100px;}
+      .stat-item{border-right:none; border-bottom:1px solid var(--line); padding:.75rem 0;}
+      .stat-item:last-child{border-bottom:none;}
+      .step-connector{display:none;}
+    }
   </style>
 </head>
 <body>
 
-  <!-- NAV -->
-  <nav class="navbar navbar-expand-lg bg-white py-3 shadow-sm">
-    <div class="container">
-      <a class="navbar-brand d-flex align-items-center" href="/">
-        <span class="brand-dot"><i class="bi bi-geo-alt"></i></span>
-        VacWeb
+<!-- ════════════ NAVBAR ════════════ -->
+<nav class="gp-nav">
+  <div class="container d-flex align-items-center justify-content-between gap-3">
+    <a href="/" class="brand">
+      <div class="brand-icon"><i class="bi bi-activity"></i></div>
+      VacWeb
+    </a>
+
+    <div class="d-none d-lg-flex align-items-center gap-1">
+      <a href="#caracteristicas" class="nav-link-gp">Características</a>
+      <a href="#flujo" class="nav-link-gp">Flujo de trabajo</a>
+      <a href="#soporte" class="nav-link-gp">Soporte</a>
+    </div>
+
+    <div class="d-flex align-items-center gap-2">
+      {% if user.is_authenticated %}
+        <a href="/dashboard/" class="btn-login">
+          <i class="bi bi-speedometer2"></i>Panel
+        </a>
+      {% else %}
+        <a href="/login/" class="btn-login">
+          <i class="bi bi-box-arrow-in-right"></i>Iniciar sesión
+        </a>
+      {% endif %}
+    </div>
+  </div>
+</nav>
+
+
+<!-- ════════════ HERO ════════════ -->
+<header class="hero">
+  <div class="hero-grain"></div>
+  <div class="container position-relative" style="z-index:1;">
+    <div class="row align-items-center g-5">
+
+      <!-- Copy -->
+      <div class="col-lg-6">
+        <div class="hero-eyebrow">
+          <span class="status-dot"></span>Sistema activo · Colombia
+        </div>
+        <h1>Gestión ganadera<br><em>inteligente</em> y<br>en tiempo real.</h1>
+        <p class="hero-lead">
+          Controla tu hato con RFID, registra vacunas, pesajes y movimientos.
+          Reportes listos para auditorías ICA desde cualquier dispositivo.
+        </p>
+        <div class="d-flex flex-wrap gap-3">
+          <a href="/login/" class="btn-hero-primary">
+            <i class="bi bi-box-arrow-in-right"></i>Acceder al sistema
+          </a>
+          <a href="#caracteristicas" class="btn-hero-sec">
+            <i class="bi bi-play-circle"></i>Ver características
+          </a>
+        </div>
+
+        <!-- Trust badges -->
+        <div class="d-flex flex-wrap gap-2 mt-4">
+          <span style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:var(--r-pill);padding:.25rem .8rem;font-size:.74rem;backdrop-filter:blur(4px);">
+            <i class="bi bi-shield-check me-1"></i>Trazabilidad ICA
+          </span>
+          <span style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:var(--r-pill);padding:.25rem .8rem;font-size:.74rem;backdrop-filter:blur(4px);">
+            <i class="bi bi-lock-fill me-1"></i>Acceso por roles (RBAC)
+          </span>
+          <span style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:var(--r-pill);padding:.25rem .8rem;font-size:.74rem;backdrop-filter:blur(4px);">
+            <i class="bi bi-cloud-check me-1"></i>24/7 disponible
+          </span>
+        </div>
+      </div>
+
+      <!-- Mini-cards grid -->
+      <div class="col-lg-6">
+        <div class="row g-3">
+          <div class="col-6">
+            <div class="hero-mini-card">
+              <div class="hero-mini-icon"><i class="bi bi-qr-code"></i></div>
+              <div class="hero-mini-title">Identificación RFID</div>
+              <div class="hero-mini-sub">Escaneo rápido, sin errores manuales.</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="hero-mini-card">
+              <div class="hero-mini-icon"><i class="bi bi-clipboard2-pulse"></i></div>
+              <div class="hero-mini-title">Salud &amp; Sanidad</div>
+              <div class="hero-mini-sub">Vacunas, tratamientos y alertas.</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="hero-mini-card">
+              <div class="hero-mini-icon"><i class="bi bi-diagram-3"></i></div>
+              <div class="hero-mini-title">Movimientos</div>
+              <div class="hero-mini-sub">Trazabilidad por potrero y fecha.</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="hero-mini-card">
+              <div class="hero-mini-icon"><i class="bi bi-graph-up-arrow"></i></div>
+              <div class="hero-mini-title">Pesajes &amp; Reportes</div>
+              <div class="hero-mini-sub">Ganancia diaria e indicadores.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Wave -->
+  <svg class="hero-wave" viewBox="0 0 1440 80" preserveAspectRatio="none">
+    <path fill="#ffffff" d="M0,40L60,37.3C120,35,240,29,360,32C480,35,600,45,720,48C840,51,960,45,1080,37.3C1200,29,1320,21,1380,17.3L1440,13L1440,80L1380,80C1320,80,1200,80,1080,80C960,80,840,80,720,80C600,80,480,80,360,80C240,80,120,80,60,80L0,80Z"/>
+  </svg>
+</header>
+
+
+<!-- ════════════ STATS STRIP ════════════ -->
+<section class="stats-strip">
+  <div class="container">
+    <div class="row g-0 text-center">
+      <div class="col-6 col-lg-3 stat-item">
+        <div class="stat-icon"><i class="bi bi-tags"></i></div>
+        <div class="stat-num">RFID</div>
+        <div class="stat-label">Identificación electrónica</div>
+      </div>
+      <div class="col-6 col-lg-3 stat-item">
+        <div class="stat-icon"><i class="bi bi-bar-chart-line"></i></div>
+        <div class="stat-num">100%</div>
+        <div class="stat-label">Trazabilidad animal</div>
+      </div>
+      <div class="col-6 col-lg-3 stat-item">
+        <div class="stat-icon"><i class="bi bi-people"></i></div>
+        <div class="stat-num">RBAC</div>
+        <div class="stat-label">Seguridad por roles</div>
+      </div>
+      <div class="col-6 col-lg-3 stat-item">
+        <div class="stat-icon"><i class="bi bi-cloud-check"></i></div>
+        <div class="stat-num">24/7</div>
+        <div class="stat-label">Disponibilidad garantizada</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ════════════ CARACTERÍSTICAS ════════════ -->
+<section id="caracteristicas" class="py-5 bg-section">
+  <div class="container">
+    <div class="text-center mb-5">
+      <div class="sec-eyebrow"><i class="bi bi-sparkles"></i>Módulos del sistema</div>
+      <h2 class="sec-title">Todo lo que necesita tu hato</h2>
+      <p class="sec-sub">Procesos alineados con buenas prácticas ganaderas y requisitos del ICA.</p>
+    </div>
+
+    <div class="row g-4">
+
+      <div class="col-md-6 col-xl-4">
+        <div class="feat-card">
+          <div class="feat-icon"><i class="bi bi-qr-code"></i></div>
+          <h5>Ficha Individual</h5>
+          <ul class="feat-list">
+            <li><i class="bi bi-check2 ck"></i>Registro RFID / arete y fotografía</li>
+            <li><i class="bi bi-check2 ck"></i>Raza, sexo, etapa y procedencia</li>
+            <li><i class="bi bi-check2 ck"></i>Historial completo de movimientos</li>
+            <li><i class="bi bi-check2 ck"></i>Asignación dinámica de potrero</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-xl-4">
+        <div class="feat-card">
+          <div class="feat-icon"><i class="bi bi-clipboard2-pulse"></i></div>
+          <h5>Sanidad</h5>
+          <ul class="feat-list">
+            <li><i class="bi bi-check2 ck"></i>Vacunas y desparasitaciones</li>
+            <li><i class="bi bi-check2 ck"></i>Tratamientos con producto y dosis</li>
+            <li><i class="bi bi-check2 ck"></i>Eventos masivos para el lote</li>
+            <li><i class="bi bi-check2 ck"></i>Alertas por fechas pendientes</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-xl-4">
+        <div class="feat-card">
+          <div class="feat-icon"><i class="bi bi-graph-up"></i></div>
+          <h5>Productividad</h5>
+          <ul class="feat-list">
+            <li><i class="bi bi-check2 ck"></i>Pesajes y ganancia diaria (GDP)</li>
+            <li><i class="bi bi-check2 ck"></i>Indicadores por lote / potrero</li>
+            <li><i class="bi bi-check2 ck"></i>Transacciones comerciales</li>
+            <li><i class="bi bi-check2 ck"></i>Reportes exportables</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-xl-4">
+        <div class="feat-card">
+          <div class="feat-icon"><i class="bi bi-grid-3x3-gap"></i></div>
+          <h5>Potreros &amp; Lotes</h5>
+          <ul class="feat-list">
+            <li><i class="bi bi-check2 ck"></i>Gestión de áreas de pastoreo</li>
+            <li><i class="bi bi-check2 ck"></i>Capacidad y ocupación actual</li>
+            <li><i class="bi bi-check2 ck"></i>Historial de movimientos entre lotes</li>
+            <li><i class="bi bi-check2 ck"></i>Estado activo / inactivo</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-xl-4">
+        <div class="feat-card">
+          <div class="feat-icon"><i class="bi bi-bar-chart-steps"></i></div>
+          <h5>Reportes</h5>
+          <ul class="feat-list">
+            <li><i class="bi bi-check2 ck"></i>Inventario ganadero actualizado</li>
+            <li><i class="bi bi-check2 ck"></i>Historial sanitario por animal</li>
+            <li><i class="bi bi-check2 ck"></i>Balance de ventas y compras</li>
+            <li><i class="bi bi-check2 ck"></i>Exportación para auditorías ICA</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-xl-4">
+        <div class="feat-card">
+          <div class="feat-icon"><i class="bi bi-shield-lock"></i></div>
+          <h5>Seguridad RBAC</h5>
+          <ul class="feat-list">
+            <li><i class="bi bi-check2 ck"></i>Roles personalizables por módulo</li>
+            <li><i class="bi bi-check2 ck"></i>Invitaciones con acceso controlado</li>
+            <li><i class="bi bi-check2 ck"></i>Auditoría de cambios (quién, cuándo)</li>
+            <li><i class="bi bi-check2 ck"></i>Sesiones seguras con Django Auth</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ════════════ FLUJO ════════════ -->
+<section id="flujo" class="py-5">
+  <div class="container">
+    <div class="text-center mb-5">
+      <div class="sec-eyebrow"><i class="bi bi-diagram-2"></i>Proceso de uso</div>
+      <h2 class="sec-title">Flujo de trabajo simple</h2>
+      <p class="sec-sub">Desde el registro hasta el reporte en cuatro pasos claros.</p>
+    </div>
+
+    <div class="row g-3 mb-5">
+      <div class="col-sm-6 col-lg-3 position-relative">
+        <div class="step-card">
+          <div class="step-num">1</div>
+          <h6>Registrar el animal</h6>
+          <p>RFID, nombre, raza, sexo y fotografía. El sistema asigna estado automáticamente.</p>
+        </div>
+        <div class="step-connector d-none d-lg-block"><i class="bi bi-chevron-right"></i></div>
+      </div>
+      <div class="col-sm-6 col-lg-3 position-relative">
+        <div class="step-card">
+          <div class="step-num">2</div>
+          <h6>Asignar potrero</h6>
+          <p>Ubica el animal en su lote. El sistema registra el movimiento con fecha y responsable.</p>
+        </div>
+        <div class="step-connector d-none d-lg-block"><i class="bi bi-chevron-right"></i></div>
+      </div>
+      <div class="col-sm-6 col-lg-3 position-relative">
+        <div class="step-card">
+          <div class="step-num">3</div>
+          <h6>Capturar eventos</h6>
+          <p>Vacunas, pesajes y tratamientos desde cualquier dispositivo. También en campo.</p>
+        </div>
+        <div class="step-connector d-none d-lg-block"><i class="bi bi-chevron-right"></i></div>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <div class="step-card">
+          <div class="step-num">4</div>
+          <h6>Generar reportes</h6>
+          <p>Exporta el historial sanitario, inventario y balance comercial para auditorías.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Roles card -->
+    <div class="row g-4">
+      <div class="col-md-6">
+        <div class="feat-card d-flex gap-3">
+          <div class="feat-icon flex-shrink-0"><i class="bi bi-people-fill"></i></div>
+          <div>
+            <h5 class="mb-1">Accesos por rol</h5>
+            <p class="text-secondary mb-2" style="font-size:.83rem;">
+              El administrador define qué módulos puede ver y editar cada usuario. Nadie ve más de lo que le corresponde.
+            </p>
+            <div class="d-flex flex-wrap gap-1">
+              <span class="role-badge"><i class="bi bi-person-gear"></i>Admin</span>
+              <span class="role-badge"><i class="bi bi-clipboard2-check"></i>Veterinario</span>
+              <span class="role-badge"><i class="bi bi-eye"></i>Solo lectura</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="feat-card d-flex gap-3">
+          <div class="feat-icon flex-shrink-0"><i class="bi bi-phone"></i></div>
+          <div>
+            <h5 class="mb-1">Diseño responsive</h5>
+            <p class="text-secondary mb-0" style="font-size:.83rem;">
+              Funciona en computadores, tablets y celulares. Perfecto para capturar datos desde el potrero sin necesidad de impresoras ni planillas.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ════════════ SOPORTE ════════════ -->
+<section id="soporte" class="py-5 support-section">
+  <div class="container">
+
+    <div class="text-center mb-5">
+      <div class="sec-eyebrow"><i class="bi bi-life-preserver"></i>Centro de soporte</div>
+      <h2 class="sec-title">¿Necesitas ayuda?</h2>
+      <p class="sec-sub">Estamos aquí para ayudarte a sacar el máximo provecho del sistema.</p>
+    </div>
+
+    <div class="row g-4 align-items-start">
+
+      <!-- ── Columna Contacto ── -->
+      <div class="col-lg-5">
+        <h6 class="fw-700 mb-3" style="font-size:.82rem;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);">
+          <i class="bi bi-headset me-1"></i>Canales de atención
+        </h6>
+
+        <div class="d-flex flex-column gap-3">
+
+          <!-- Email -->
+          <div class="contact-card">
+            <div class="contact-icon contact-icon-mail">
+              <i class="bi bi-envelope-fill"></i>
+            </div>
+            <div>
+              <div class="contact-title">Correo electrónico</div>
+              <div class="contact-val">
+                <a href="mailto:soporte@vacweb.com.co">soporte@vacweb.com.co</a>
+              </div>
+              <div class="contact-val" style="margin-top:.2rem;">Respuesta en menos de 24 horas hábiles.</div>
+            </div>
+          </div>
+
+          <!-- WhatsApp -->
+          <a href="https://wa.me/573000000000?text=Hola%2C+necesito+soporte+con+VacWeb" target="_blank" rel="noopener" class="contact-card">
+            <div class="contact-icon contact-icon-wa">
+              <i class="bi bi-whatsapp"></i>
+            </div>
+            <div>
+              <div class="contact-title">WhatsApp</div>
+              <div class="contact-val">
+                <strong style="color:var(--green);">+57 300 000 0000</strong>
+              </div>
+              <div class="contact-val" style="margin-top:.2rem;">Soporte rápido en horario de atención.</div>
+            </div>
+          </a>
+
+          <!-- Horario -->
+          <div class="contact-card" style="cursor:default;">
+            <div class="contact-icon contact-icon-clock">
+              <i class="bi bi-clock-fill"></i>
+            </div>
+            <div style="flex:1;">
+              <div class="contact-title mb-2">Horario de atención</div>
+              <div class="hours-row">
+                <span class="hours-day">Lunes – Viernes</span>
+                <span class="hours-time">8:00 am – 6:00 pm</span>
+                <span class="hours-badge badge-open">Abierto</span>
+              </div>
+              <div class="hours-row">
+                <span class="hours-day">Sábados</span>
+                <span class="hours-time">9:00 am – 1:00 pm</span>
+                <span class="hours-badge badge-open">Abierto</span>
+              </div>
+              <div class="hours-row">
+                <span class="hours-day">Domingos / Festivos</span>
+                <span class="hours-time">—</span>
+                <span class="hours-badge badge-closed">Cerrado</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Guía rápida -->
+          <div class="contact-card" style="background:linear-gradient(135deg,var(--green-dark),var(--green-mid));border-color:transparent;color:#fff;">
+            <div class="contact-icon" style="background:rgba(255,255,255,.15);color:#fff;">
+              <i class="bi bi-book-fill"></i>
+            </div>
+            <div>
+              <div class="contact-title" style="color:#fff;">Guía de usuario</div>
+              <div style="font-size:.82rem;opacity:.85;margin-bottom:.5rem;">
+                Documentación completa con capturas de pantalla paso a paso.
+              </div>
+              <span style="font-size:.75rem;background:rgba(255,255,255,.2);border-radius:var(--r-pill);padding:.2rem .65rem;font-weight:600;">
+                <i class="bi bi-download me-1"></i>Disponible próximamente
+              </span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── Columna FAQ ── -->
+      <div class="col-lg-7">
+        <h6 class="fw-700 mb-3" style="font-size:.82rem;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);">
+          <i class="bi bi-question-circle me-1"></i>Preguntas frecuentes
+        </h6>
+
+        <div class="accordion faq-accordion" id="faqAccordion">
+
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                ¿Cómo registro un animal nuevo?
+              </button>
+            </h2>
+            <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+              <div class="accordion-body">
+                Ve al módulo <strong>Animales</strong> y haz clic en <em>"Nuevo animal"</em>. Completa los campos obligatorios (al menos RFID o nombre, sexo y etapa). Si el animal está listo para activarse, también debes asignarle un potrero. Puedes empezar en estado <em>Borrador</em> y activarlo después cuando tengas todos los datos.
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                ¿Cómo agrego o cambio la foto de un animal?
+              </button>
+            </h2>
+            <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+              <div class="accordion-body">
+                Abre la <strong>ficha del animal</strong> (clic en su nombre desde la lista). En la parte superior izquierda verás la sección de foto. Si no tiene imagen, haz clic en el área gris o en el botón <em>"Agregar foto"</em>. Si ya tiene foto, pasa el cursor sobre ella y aparecerán los botones <em>"Cambiar"</em> y <em>"Eliminar"</em>. Formatos permitidos: JPG, PNG, WEBP · Máximo 5 MB.
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                ¿Cómo registro un evento sanitario para varios animales a la vez?
+              </button>
+            </h2>
+            <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+              <div class="accordion-body">
+                En el módulo <strong>Eventos Sanitarios</strong>, haz clic en <em>"Evento masivo"</em> (botón verde en la parte superior). Puedes filtrar los animales por potrero, seleccionar todos o solo algunos con los checkboxes y completar los datos del evento (tipo, fecha, producto, dosis, responsable). El sistema creará un evento individual por cada animal seleccionado de forma atómica.
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+                ¿Cómo creo un nuevo usuario o invito a alguien al sistema?
+              </button>
+            </h2>
+            <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+              <div class="accordion-body">
+                Solo los usuarios con rol <strong>Administrador</strong> pueden gestionar accesos. Ve a <em>Usuarios</em> en el menú lateral y haz clic en <em>"Invitar usuario"</em>. Ingresa el correo electrónico y asigna un rol. El invitado recibirá un enlace único para activar su cuenta y crear su contraseña. Los roles controlan exactamente qué módulos puede ver y editar cada persona.
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq5">
+                ¿Puedo dar de baja un animal y qué pasa con su historial?
+              </button>
+            </h2>
+            <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+              <div class="accordion-body">
+                Sí. VacWeb utiliza <strong>baja lógica</strong>: el animal pasa a estado <em>Inactivo</em> pero todos sus registros (pesajes, eventos, transacciones) se conservan para trazabilidad e informes. Para dar de baja: abre la ficha del animal → botón <em>"Editar"</em> → estado <em>Inactivo</em> + motivo. Nota: si el animal tiene transacciones comerciales confirmadas pendientes, debes anularlas primero.
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq6">
+                ¿Cómo genero reportes para auditorías del ICA?
+              </button>
+            </h2>
+            <div id="faq6" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+              <div class="accordion-body">
+                En el menú lateral encontrarás el módulo <strong>Reportes</strong>. Desde allí puedes generar: inventario ganadero actual, historial sanitario por animal, reporte de ventas/compras y análisis de pesajes. Los reportes pueden filtrarse por fechas, potrero o animal y están diseñados para cumplir los formatos de trazabilidad bovina del ICA.
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq7">
+                ¿Qué hago si olvidé mi contraseña?
+              </button>
+            </h2>
+            <div id="faq7" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+              <div class="accordion-body">
+                En la pantalla de inicio de sesión haz clic en <em>"¿Olvidaste tu contraseña?"</em>. Ingresa tu correo registrado y recibirás un enlace para restablecerla. Si no recibes el correo en 5 minutos, revisa la carpeta de spam o escríbenos a <a href="mailto:soporte@vacweb.com.co">soporte@vacweb.com.co</a>.
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Contacto directo si no encuentra respuesta -->
+        <div class="mt-4 p-3 d-flex align-items-center gap-3"
+             style="background:var(--green-soft);border:1px solid rgba(11,107,43,.15);border-radius:var(--r);font-size:.83rem;">
+          <i class="bi bi-chat-dots-fill text-success fs-5 flex-shrink-0"></i>
+          <div>
+            <strong>¿No encontraste la respuesta?</strong><br>
+            <span class="text-secondary">Escríbenos directamente a </span>
+            <a href="mailto:soporte@vacweb.com.co" style="color:var(--green);font-weight:600;">soporte@vacweb.com.co</a>
+            <span class="text-secondary"> y te respondemos en menos de 24 horas hábiles.</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ════════════ CTA ════════════ -->
+<section class="cta-section py-5 text-white">
+  <div class="container text-center position-relative" style="z-index:1;">
+    <div class="sec-eyebrow" style="background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2);color:#fff;margin-bottom:1.2rem;">
+      <i class="bi bi-rocket-takeoff"></i>Empieza ahora
+    </div>
+    <h2 class="text-white mb-3">¿Listo para modernizar tu ganadería?</h2>
+    <p style="opacity:.85;font-size:.98rem;max-width:500px;margin:0 auto 2rem;">
+      Accede al panel de control y empieza a registrar tu hato en minutos.
+    </p>
+    <div class="d-flex flex-wrap justify-content-center gap-3">
+      {% if user.is_authenticated %}
+        <a href="/dashboard/" class="btn-hero-primary">
+          <i class="bi bi-speedometer2"></i>Ir al panel
+        </a>
+      {% else %}
+        <a href="/login/" class="btn-hero-primary">
+          <i class="bi bi-box-arrow-in-right"></i>Iniciar sesión
+        </a>
+      {% endif %}
+      <a href="#soporte" class="btn-hero-sec">
+        <i class="bi bi-life-preserver"></i>Centro de soporte
       </a>
-      <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#nav"><span class="navbar-toggler-icon"></span></button>
-      <div id="nav" class="collapse navbar-collapse">
-        <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-3">
-          <li class="nav-item"><a class="nav-link" href="#caracteristicas">Características</a></li>
-          <li class="nav-item"><a class="nav-link" href="#flujo">Flujo</a></li>
-          <li class="nav-item"><a class="nav-link" href="#soporte">Soporte</a></li>
-          {% if user.is_authenticated %}
-            <li class="nav-item"><a class="btn btn-outline-success" href="/logout/">Cerrar sesión</a></li>
-          {% else %}
-            <li class="nav-item"><a class="btn btn-success" href="/login/">Iniciar sesión</a></li>
-          {% endif %}
-        </ul>
-      </div>
     </div>
-  </nav>
+  </div>
+</section>
 
-  <!-- HERO -->
-  <header class="hero d-flex align-items-center">
-    <div class="container">
-      <div class="row align-items-center g-4">
-        <div class="col-lg-7">
-          <div class="d-inline-flex align-items-center gap-2 mb-3">
-            <span class="badge rounded-pill text-bg-light text-dark"><i class="bi bi-shield-check me-1"></i> Trazabilidad ICA</span>
-            <span class="badge rounded-pill text-bg-light text-dark"><i class="bi bi-cloud-check me-1"></i> Disponible 24/7</span>
+
+<!-- ════════════ FOOTER ════════════ -->
+<footer class="gp-footer py-5">
+  <div class="container">
+    <div class="row g-4 mb-4">
+
+      <!-- Brand -->
+      <div class="col-lg-4">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <div class="brand-icon" style="width:34px;height:34px;font-size:.95rem;">
+            <i class="bi bi-activity"></i>
           </div>
-          <h1 class="display-5 fw-bold mb-3">Gestión ganadera profesional, <br>simple y en tiempo real.</h1>
-          <p class="lead mb-4">Control de animales con RFID, historial sanitario, movimientos entre potreros y reportes listos para auditoría.</p>
-          <div class="d-flex flex-wrap gap-3">
-            <a href="/login/" class="btn btn-light btn-lg fw-semibold"><i class="bi bi-box-arrow-in-right me-2"></i>Iniciar sesión</a>
-            <a href="#caracteristicas" class="btn btn-outline-light btn-lg"><i class="bi bi-play-circle me-2"></i>Ver características</a>
-          </div>
+          <span class="footer-brand">VacWeb</span>
         </div>
-        <div class="col-lg-5">
-          <div class="row g-3">
-            <div class="col-6">
-              <div class="feature-card p-3 text-dark">
-                <div class="feature-icon mb-2"><i class="bi bi-tags"></i></div>
-                <div class="fw-semibold">Identificación RFID</div>
-                <small class="text-secondary">Escaneo rápido sin errores.</small>
-              </div>
-            </div>
-            <div class="col-6">
-              <div class="feature-card p-3 text-dark">
-                <div class="feature-icon mb-2"><i class="bi bi-clipboard2-pulse"></i></div>
-                <div class="fw-semibold">Salud y tratamientos</div>
-                <small class="text-secondary">Vacunas, desparasitaciones, evidencias.</small>
-              </div>
-            </div>
-            <div class="col-6">
-              <div class="feature-card p-3 text-dark">
-                <div class="feature-icon mb-2"><i class="bi bi-diagram-3"></i></div>
-                <div class="fw-semibold">Mov. entre potreros</div>
-                <small class="text-secondary">Trazabilidad por ubicación.</small>
-              </div>
-            </div>
-            <div class="col-6">
-              <div class="feature-card p-3 text-dark">
-                <div class="feature-icon mb-2"><i class="bi bi-graph-up-arrow"></i></div>
-                <div class="fw-semibold">Pesajes e indicadores</div>
-                <small class="text-secondary">Ganancia diaria y alertas.</small>
-              </div>
-            </div>
-          </div>
+        <p style="font-size:.82rem;color:rgba(255,255,255,.5);max-width:280px;line-height:1.6;">
+          Sistema de control ganadero profesional. Trazabilidad, sanidad y productividad en una sola plataforma.
+        </p>
+      </div>
+
+      <!-- Links -->
+      <div class="col-6 col-lg-2 offset-lg-2">
+        <div style="font-size:.76rem;font-weight:700;color:rgba(255,255,255,.35);letter-spacing:.06em;text-transform:uppercase;margin-bottom:.85rem;">Sistema</div>
+        <div class="d-flex flex-column gap-2">
+          <a href="#caracteristicas" class="footer-link">Características</a>
+          <a href="#flujo" class="footer-link">Flujo de trabajo</a>
+          <a href="/login/" class="footer-link">Iniciar sesión</a>
         </div>
       </div>
+
+      <div class="col-6 col-lg-2">
+        <div style="font-size:.76rem;font-weight:700;color:rgba(255,255,255,.35);letter-spacing:.06em;text-transform:uppercase;margin-bottom:.85rem;">Soporte</div>
+        <div class="d-flex flex-column gap-2">
+          <a href="#soporte" class="footer-link">Centro de ayuda</a>
+          <a href="#soporte" class="footer-link">Preguntas frecuentes</a>
+          <a href="mailto:soporte@vacweb.com.co" class="footer-link">Contacto</a>
+        </div>
+      </div>
+
+      <div class="col-6 col-lg-2">
+        <div style="font-size:.76rem;font-weight:700;color:rgba(255,255,255,.35);letter-spacing:.06em;text-transform:uppercase;margin-bottom:.85rem;">Contacto</div>
+        <div class="d-flex flex-column gap-2">
+          <a href="mailto:soporte@vacweb.com.co" class="footer-link">
+            <i class="bi bi-envelope me-1"></i>soporte@vacweb.com.co
+          </a>
+          <a href="https://wa.me/573000000000" target="_blank" rel="noopener" class="footer-link">
+            <i class="bi bi-whatsapp me-1"></i>+57 300 000 0000
+          </a>
+        </div>
+      </div>
+
     </div>
 
-    <!-- Wave -->
-    <svg class="hero-wave" viewBox="0 0 1440 70" preserveAspectRatio="none"><path fill="#fff" d="M0,32L80,32C160,32,320,32,480,26.7C640,21,800,11,960,16C1120,21,1280,43,1360,53.3L1440,64L1440,0L1360,0C1280,0,1120,0,960,0C800,0,640,0,480,0C320,0,160,0,80,0L0,0Z"/></svg>
-  </header>
+    <hr class="footer-divider">
 
-  <!-- STATS -->
-  <section class="py-5 bg-white">
-    <div class="container">
-      <div class="row text-center g-4">
-        <div class="col-6 col-lg-3 stat">
-          <h3 class="fw-bold mb-0">100%</h3><small class="text-secondary">Trazabilidad</small>
-        </div>
-        <div class="col-6 col-lg-3 stat">
-          <h3 class="fw-bold mb-0">24/7</h3><small class="text-secondary">Disponibilidad</small>
-        </div>
-        <div class="col-6 col-lg-3 stat">
-          <h3 class="fw-bold mb-0"><i class="bi bi-shield-lock"></i></h3><small class="text-secondary">Seguridad RBAC</small>
-        </div>
-        <div class="col-6 col-lg-3">
-          <h3 class="fw-bold mb-0"><i class="bi bi-cloud-arrow-up"></i></h3><small class="text-secondary">Backups automáticos</small>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- FEATURES -->
-  <section id="caracteristicas" class="py-5">
-    <div class="container">
-      <div class="text-center mb-4">
-        <span class="badge text-bg-success-subtle text-success"><i class="bi bi-sparkles me-1"></i>Núcleo del sistema</span>
-        <h2 class="mt-2">Todo lo que necesitas para tu hato</h2>
-        <p class="text-secondary mb-0">Procesos alineados con buenas prácticas y requisitos del ICA.</p>
-      </div>
-
-      <div class="row g-4">
-        <div class="col-md-6 col-xl-4">
-          <div class="feature-card p-4 h-100">
-            <div class="d-flex align-items-center gap-3 mb-2">
-              <div class="feature-icon"><i class="bi bi-qr-code"></i></div>
-              <h5 class="mb-0">Ficha individual</h5>
-            </div>
-            <ul class="mt-2 mb-0 list-unstyled small">
-              <li class="mb-1"><i class="bi bi-check2 tick me-1"></i> Identificación RFID y fotografía</li>
-              <li class="mb-1"><i class="bi bi-check2 tick me-1"></i> Raza, edad, reproductivo</li>
-              <li class="mb-1"><i class="bi bi-check2 tick me-1"></i> Historial de movimientos</li>
-            </ul>
-          </div>
-        </div>
-        <div class="col-md-6 col-xl-4">
-          <div class="feature-card p-4 h-100">
-            <div class="d-flex align-items-center gap-3 mb-2">
-              <div class="feature-icon"><i class="bi bi-hospital"></i></div>
-              <h5 class="mb-0">Sanidad</h5>
-            </div>
-            <ul class="mt-2 mb-0 list-unstyled small">
-              <li class="mb-1"><i class="bi bi-check2 tick me-1"></i> Vacunas y desparasitaciones</li>
-              <li class="mb-1"><i class="bi bi-check2 tick me-1"></i> Tratamientos y evidencias</li>
-              <li class="mb-1"><i class="bi bi-check2 tick me-1"></i> Alertas por calendario</li>
-            </ul>
-          </div>
-        </div>
-        <div class="col-md-6 col-xl-4">
-          <div class="feature-card p-4 h-100">
-            <div class="d-flex align-items-center gap-3 mb-2">
-              <div class="feature-icon"><i class="bi bi-graph-up"></i></div>
-              <h5 class="mb-0">Productividad</h5>
-            </div>
-            <ul class="mt-2 mb-0 list-unstyled small">
-              <li class="mb-1"><i class="bi bi-check2 tick me-1"></i> Pesajes y ganancia diaria</li>
-              <li class="mb-1"><i class="bi bi-check2 tick me-1"></i> Indicadores por lote</li>
-              <li class="mb-1"><i class="bi bi-check2 tick me-1"></i> Exportación de reportes</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- FLOW -->
-  <section id="flujo" class="py-5 bg-light">
-    <div class="container">
-      <div class="row align-items-center g-5">
-        <div class="col-lg-6">
-          <h3 class="mb-3">Flujo de trabajo simple</h3>
-          <ol class="list-group list-group-numbered shadow-sm">
-            <li class="list-group-item">Registrar animal con RFID y datos básicos.</li>
-            <li class="list-group-item">Asignar potrero y plan sanitario.</li>
-            <li class="list-group-item">Capturar pesajes y tratamientos desde el móvil.</li>
-            <li class="list-group-item">Generar reportes y cumplir auditorías.</li>
-          </ol>
-        </div>
-        <div class="col-lg-6">
-          <div class="feature-card p-4">
-            <div class="d-flex align-items-center gap-2 mb-2"><i class="bi bi-shield-lock text-success"></i><strong>Accesos por rol</strong></div>
-            <p class="text-secondary mb-0 small">Los módulos se habilitan según permisos (RBAC). Admin define qué ve y hace cada rol.</p>
-          </div>
-          <div class="feature-card p-4 mt-3">
-            <div class="d-flex align-items-center gap-2 mb-2"><i class="bi bi-cloud-arrow-down text-success"></i><strong>Modo offline</strong></div>
-            <p class="text-secondary mb-0 small">Pensado para zonas con conectividad intermitente (sincronización posterior).</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- CTA -->
-  <section class="py-5">
-    <div class="container text-center">
-      <div class="feature-card p-5 mx-auto" style="max-width:960px">
-        <h3 class="mb-2">¿Listo para organizar tu hato?</h3>
-        <p class="text-secondary mb-4">Inicia sesión para acceder al panel o revisa la documentación del proyecto.</p>
-        <div class="d-flex flex-wrap justify-content-center gap-3">
-          {% if user.is_authenticated %}
-            <a href="/" class="btn btn-success btn-lg"><i class="bi bi-speedometer2 me-2"></i>Ir al panel</a>
-            <a href="/logout/" class="btn btn-outline-success btn-lg">Cerrar sesión</a>
-          {% else %}
-            <a href="/login/" class="btn btn-success btn-lg"><i class="bi bi-box-arrow-in-right me-2"></i>Iniciar sesión</a>
-            <a href="#caracteristicas" class="btn btn-outline-success btn-lg">Ver más</a>
-          {% endif %}
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- FOOTER -->
-  <footer class="footer py-4">
-    <div class="container d-flex flex-wrap justify-content-between align-items-center">
-      <small class="text-secondary">© VacWeb — Sistema de Control Ganadero</small>
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 pt-2">
+      <small style="color:rgba(255,255,255,.35);">© 2025 VacWeb · Sistema de Control Ganadero · Colombia</small>
       <div class="d-flex gap-3">
-        <a class="text-secondary text-decoration-none" href="#soporte"><i class="bi bi-life-preserver me-1"></i>Soporte</a>
-        <a class="text-secondary text-decoration-none" href="#"><i class="bi bi-book me-1"></i>Documentación</a>
+        <a href="#soporte" class="footer-link"><i class="bi bi-life-preserver me-1"></i>Soporte</a>
+        <a href="#" class="footer-link"><i class="bi bi-shield-check me-1"></i>Privacidad</a>
       </div>
     </div>
-  </footer>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  /* Navbar opaque on scroll */
+  (function(){
+    var nav = document.querySelector('.gp-nav');
+    window.addEventListener('scroll', function(){
+      nav.style.background = window.scrollY > 30
+        ? 'rgba(255,255,255,.97)'
+        : 'rgba(255,255,255,.82)';
+    }, {passive:true});
+  })();
+</script>
 </body>
 </html>

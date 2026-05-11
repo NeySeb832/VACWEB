@@ -24,6 +24,13 @@ urlpatterns = [
 
     # Cambio rápido de potrero (solo actualiza ese campo)
     path("<int:pk>/potrero/", views.animal_assign_potrero, name="assign_potrero"),
+
+    # Gestión de foto (subir / reemplazar / eliminar)
+    path("<int:pk>/foto/", views.animal_foto, name="foto"),
+
+    # RFID: API de búsqueda (JSON) y página de escaneo dedicada
+    path("rfid/lookup/", views.rfid_lookup, name="rfid_lookup"),
+    path("rfid/scan/",   views.rfid_scan,   name="rfid_scan"),
 ]
 
 if settings.DEBUG:

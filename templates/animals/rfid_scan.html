@@ -1,0 +1,734 @@
+{% extends "base/menu_base.html" %}
+{% load static %}
+
+{% block title %}Escanear RFID · VacWeb{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ── Layout fullscreen ── */
+  .scan-root {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: calc(100vh - 60px);
+    padding: 2rem 1rem 3rem;
+  }
+
+  /* ── Cabecera ── */
+  .scan-back {
+    align-self: flex-start;
+    display: inline-flex; align-items: center; gap: .4rem;
+    font-size: .82rem; color: var(--gp-muted); text-decoration: none;
+    padding: .3rem .7rem; border-radius: var(--r-pill);
+    border: 1px solid var(--gp-line); background: var(--bg-surface);
+    margin-bottom: 2rem;
+    transition: border-color var(--t-fast), color var(--t-fast);
+  }
+  .scan-back:hover { border-color: var(--gp-ink); color: var(--gp-ink); }
+
+  /* ── Tarjeta central ── */
+  .scan-card {
+    width: 100%; max-width: 480px;
+    background: var(--bg-surface);
+    border: 1px solid var(--gp-line);
+    border-radius: var(--r-xl);
+    box-shadow: var(--gp-shadow-lg);
+    overflow: hidden;
+  }
+
+  /* ── Zona de animación ── */
+  .scan-zone {
+    position: relative;
+    background: linear-gradient(160deg, #0f2818 0%, #0b6b2b 60%, #15803d 100%);
+    padding: 2.8rem 2rem 3rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    overflow: hidden;
+  }
+  .scan-zone::before {
+    content: '';
+    position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse 70% 60% at 50% 30%, rgba(255,255,255,.06), transparent);
+  }
+
+  /* Anillos animados */
+  .scan-rings {
+    position: relative;
+    width: 110px; height: 110px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .scan-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,.25);
+    animation: ring-pulse 2.4s ease-out infinite;
+  }
+  .scan-ring:nth-child(1) { width: 70px;  height: 70px;  animation-delay: 0s; }
+  .scan-ring:nth-child(2) { width: 92px;  height: 92px;  animation-delay: .4s; }
+  .scan-ring:nth-child(3) { width: 110px; height: 110px; animation-delay: .8s; }
+  @keyframes ring-pulse {
+    0%   { transform: scale(.85); opacity: 0; }
+    20%  { opacity: 1; }
+    100% { transform: scale(1.05); opacity: 0; }
+  }
+  .scan-icon-wrap {
+    width: 56px; height: 56px; border-radius: 16px;
+    background: rgba(255,255,255,.15);
+    border: 1.5px solid rgba(255,255,255,.25);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.6rem; color: #fff; z-index: 1;
+    backdrop-filter: blur(4px);
+  }
+
+  /* Scan line animada (solo se muestra cuando está leyendo) */
+  .scan-line {
+    position: absolute;
+    left: 12px; right: 12px; height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(134,239,172,.9), transparent);
+    border-radius: var(--r-pill);
+    animation: scan-sweep 1.6s ease-in-out infinite;
+    display: none;
+  }
+  .scanning .scan-line { display: block; }
+  @keyframes scan-sweep {
+    0%   { top: 15%; opacity: 0; }
+    10%  { opacity: 1; }
+    90%  { opacity: 1; }
+    100% { top: 85%; opacity: 0; }
+  }
+
+  .scan-label {
+    color: rgba(255,255,255,.9); font-size: .88rem; font-weight: 600;
+    text-align: center; z-index: 1;
+  }
+  .scan-sublabel {
+    color: rgba(255,255,255,.6); font-size: .75rem;
+    text-align: center; z-index: 1;
+    max-width: 280px; line-height: 1.5;
+  }
+
+  /* ── Cuerpo de la tarjeta ── */
+  .scan-body { padding: 1.4rem 1.5rem 1.6rem; }
+
+  /* Input RFID (oculto visualmente pero captura el foco) */
+  .rfid-input-wrap {
+    position: relative; margin-bottom: 1rem;
+  }
+  .rfid-input-prefix {
+    position: absolute; left: .85rem; top: 50%; transform: translateY(-50%);
+    color: var(--gp-muted-2); font-size: .95rem; pointer-events: none;
+  }
+  #rfid-input {
+    width: 100%; padding: .65rem .9rem .65rem 2.4rem;
+    border: 1.5px solid var(--gp-line); border-radius: var(--r-md);
+    font-size: .88rem; color: var(--gp-ink); background: var(--gp-line-2);
+    outline: none; transition: border-color var(--t-fast), box-shadow var(--t-fast), background var(--t-fast);
+    font-family: monospace; letter-spacing: .05em;
+  }
+  #rfid-input:focus {
+    border-color: var(--gp-green); background: #fff;
+    box-shadow: 0 0 0 3px rgba(11,107,43,.12);
+  }
+  #rfid-input::placeholder { font-family: system-ui, sans-serif; letter-spacing: 0; }
+
+  .input-hint {
+    font-size: .73rem; color: var(--gp-muted-2); margin-top: .4rem; text-align: center;
+  }
+
+  /* ── Botones de modo ── */
+  .mode-btns { display: flex; flex-direction: column; gap: .6rem; margin-top: .9rem; }
+
+  .btn-mode {
+    display: flex; align-items: center; gap: .75rem;
+    padding: .75rem 1rem; border-radius: var(--r-md);
+    border: 1.5px solid var(--gp-line); background: var(--bg-surface);
+    cursor: pointer; text-align: left; width: 100%;
+    transition: border-color var(--t-fast), background var(--t-fast), box-shadow var(--t-fast);
+    font-size: .84rem; color: var(--gp-ink-2);
+  }
+  .btn-mode:hover { border-color: var(--gp-green); background: var(--gp-green-soft); }
+  .btn-mode.active {
+    border-color: var(--gp-green);
+    background: var(--gp-green-soft);
+    box-shadow: 0 0 0 3px rgba(11,107,43,.1);
+  }
+  .btn-mode-icon {
+    width: 36px; height: 36px; border-radius: 9px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
+  }
+  .icon-bt  { background: #eff6ff; color: #1d4ed8; }
+  .icon-nfc { background: var(--gp-green-soft); color: var(--gp-green); }
+  .btn-mode-text strong { display: block; font-size: .83rem; font-weight: 600; color: var(--gp-ink); }
+  .btn-mode-text span   { font-size: .73rem; color: var(--gp-muted); }
+  .btn-mode .mode-status { margin-left: auto; font-size: .7rem; font-weight: 600; padding: .2rem .55rem; border-radius: var(--r-pill); flex-shrink: 0; }
+  .status-ready  { background: var(--gp-green-soft); color: var(--gp-green-dark); }
+  .status-active { background: #dcfce7; color: #166534; }
+  .status-error  { background: #fee2e2; color: #991b1b; }
+  .status-unavail{ background: var(--gp-line-2); color: var(--gp-muted); }
+
+  /* ── Resultado ── */
+  #scan-result { margin-top: 1.2rem; }
+
+  .result-card {
+    border-radius: var(--r-md); overflow: hidden;
+    border: 1.5px solid var(--gp-line);
+    animation: gp-fade-up .2s var(--ease-out) both;
+  }
+  .result-header {
+    padding: .75rem 1rem;
+    display: flex; align-items: center; gap: .7rem;
+  }
+  .result-header-found   { background: #dcfce7; border-bottom: 1px solid #bbf7d0; }
+  .result-header-notfound{ background: #fee2e2; border-bottom: 1px solid #fecaca; }
+  .result-header-icon { font-size: 1.15rem; }
+  .result-header-title { font-size: .85rem; font-weight: 700; }
+  .result-header-sub   { font-size: .75rem; opacity: .75; }
+
+  .result-animal {
+    padding: .9rem 1rem;
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: .35rem .8rem;
+  }
+  .result-field-label { font-size: .68rem; color: var(--gp-muted); text-transform: uppercase; letter-spacing: .04em; font-weight: 600; }
+  .result-field-value { font-size: .82rem; font-weight: 500; color: var(--gp-ink); }
+
+  .result-actions {
+    padding: .75rem 1rem;
+    border-top: 1px solid var(--gp-line);
+    display: flex; flex-wrap: wrap; gap: .5rem;
+  }
+  .btn-result-primary {
+    flex: 1; min-width: 120px;
+    display: inline-flex; align-items: center; justify-content: center; gap: .4rem;
+    padding: .55rem .9rem; border-radius: var(--r-pill);
+    background: var(--gp-ink); color: #fff; text-decoration: none;
+    font-size: .8rem; font-weight: 600; border: none; cursor: pointer;
+    transition: opacity var(--t-fast);
+  }
+  .btn-result-primary:hover { opacity: .88; color: #fff; }
+  .btn-result-sec {
+    display: inline-flex; align-items: center; gap: .35rem;
+    padding: .5rem .85rem; border-radius: var(--r-pill);
+    border: 1.5px solid var(--gp-line); background: var(--bg-surface);
+    color: var(--gp-ink-2); text-decoration: none;
+    font-size: .78rem; font-weight: 500;
+    transition: border-color var(--t-fast), background var(--t-fast);
+  }
+  .btn-result-sec:hover { border-color: var(--gp-ink); background: var(--gp-line-2); color: var(--gp-ink); }
+
+  .notfound-body {
+    padding: 1rem;
+    font-size: .83rem; color: var(--gp-muted); text-align: center;
+  }
+  .notfound-rfid {
+    font-family: monospace; font-weight: 700; letter-spacing: .08em;
+    color: var(--gp-ink); font-size: .9rem;
+    background: var(--gp-line-2); padding: .2rem .6rem; border-radius: 6px;
+  }
+
+  /* Estado pills */
+  .pill-act { background: #020617; color: #f9fafb; font-size: .68rem; font-weight: 600; border-radius: var(--r-pill); padding: .1rem .5rem; }
+  .pill-ina { background: #e5e7eb; color: #4b5563; font-size: .68rem; font-weight: 600; border-radius: var(--r-pill); padding: .1rem .5rem; }
+  .pill-bor { background: #eef2ff; color: #4338ca; font-size: .68rem; font-weight: 600; border-radius: var(--r-pill); padding: .1rem .5rem; }
+
+  /* ── Historial reciente ── */
+  .scan-history { width: 100%; max-width: 480px; margin-top: 1.5rem; }
+  .scan-history-title { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--gp-muted); font-weight: 700; margin-bottom: .5rem; }
+  .history-item {
+    display: flex; align-items: center; gap: .65rem;
+    padding: .5rem .75rem; border-radius: var(--r-md);
+    background: var(--bg-surface); border: 1px solid var(--gp-line);
+    margin-bottom: .35rem; text-decoration: none; color: inherit;
+    font-size: .81rem; transition: border-color var(--t-fast), background var(--t-fast);
+  }
+  .history-item:hover { border-color: var(--gp-ink); background: var(--gp-line-2); color: inherit; }
+  .history-rfid { font-family: monospace; font-size: .78rem; color: var(--gp-muted); }
+
+  /* Estilos responsive para móvil */
+  @media (max-width: 480px) {
+    .scan-root { padding: 1rem .75rem 2rem; }
+    .scan-zone { padding: 2rem 1.5rem 2.5rem; }
+    .result-animal { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="scan-root">
+
+  <!-- Volver -->
+  <a href="{% url 'animals:list' %}" class="scan-back">
+    <i class="bi bi-arrow-left"></i>Volver a animales
+  </a>
+
+  <!-- Tarjeta principal -->
+  <div class="scan-card">
+
+    <!-- Zona animada -->
+    <div class="scan-zone" id="scan-zone">
+      <div class="scan-line"></div>
+      <div class="scan-rings">
+        <div class="scan-ring"></div>
+        <div class="scan-ring"></div>
+        <div class="scan-ring"></div>
+        <div class="scan-icon-wrap" id="scan-icon">
+          <i class="bi bi-upc-scan"></i>
+        </div>
+      </div>
+      <div class="scan-label" id="scan-label">Listo para escanear</div>
+      <div class="scan-sublabel" id="scan-sublabel">
+        Selecciona el modo según tu dispositivo
+      </div>
+    </div>
+
+    <!-- Cuerpo -->
+    <div class="scan-body">
+
+      <!-- Campo de captura (Bluetooth HID / manual) -->
+      <div class="rfid-input-wrap">
+        <i class="bi bi-upc rfid-input-prefix"></i>
+        <input type="text" id="rfid-input"
+               placeholder="Apunta el lector aquí o escribe el código..."
+               autocomplete="off" autocorrect="off" spellcheck="false">
+      </div>
+      <p class="input-hint">
+        <i class="bi bi-bluetooth me-1"></i>
+        Con lector Bluetooth: mantén este campo activo y escanea la chapeta.
+        El lector enviará el código automáticamente.
+      </p>
+
+      <!-- Botones de modo -->
+      <div class="mode-btns">
+
+        <!-- Modo Bluetooth/manual (siempre disponible) -->
+        <button class="btn-mode active" id="btn-mode-bt" type="button">
+          <div class="btn-mode-icon icon-bt"><i class="bi bi-bluetooth"></i></div>
+          <div class="btn-mode-text">
+            <strong>Lector Bluetooth / USB</strong>
+            <span>Escáner externo conectado al dispositivo</span>
+          </div>
+          <span class="mode-status status-active" id="status-bt">Activo</span>
+        </button>
+
+        <!-- Modo NFC móvil -->
+        <button class="btn-mode" id="btn-mode-nfc" type="button">
+          <div class="btn-mode-icon icon-nfc"><i class="bi bi-phone"></i></div>
+          <div class="btn-mode-text">
+            <strong>NFC del teléfono</strong>
+            <span>Lee la chapeta acercando el móvil</span>
+          </div>
+          <span class="mode-status status-unavail" id="status-nfc">No disponible</span>
+        </button>
+
+      </div>
+
+      <!-- Área de resultado -->
+      <div id="scan-result"></div>
+
+    </div>
+  </div>
+
+  <!-- Historial de escaneos recientes (sesión) -->
+  <div class="scan-history" id="scan-history" style="display:none;">
+    <div class="scan-history-title"><i class="bi bi-clock-history me-1"></i>Escaneos recientes</div>
+    <div id="history-list"></div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  "use strict";
+
+  /* ── Configuración ── */
+  var LOOKUP_URL  = "{{ lookup_url }}";
+  var CREATE_URL  = "{{ create_url }}";
+  var PUEDE_CREAR = {{ puede_crear|yesno:"true,false" }};
+
+  /* ── Estado ── */
+  var currentMode = "bt";   // "bt" | "nfc"
+  var isSearching = false;
+  var nfcReader   = null;
+  var history     = [];     // Array de {rfid, display, url, ts}
+  var debounceTimer;
+
+  /* ── Refs DOM ── */
+  var scanZone    = document.getElementById("scan-zone");
+  var scanIcon    = document.getElementById("scan-icon");
+  var scanLabel   = document.getElementById("scan-label");
+  var scanSublabel= document.getElementById("scan-sublabel");
+  var rfidInput   = document.getElementById("rfid-input");
+  var resultArea  = document.getElementById("scan-result");
+  var btnBt       = document.getElementById("btn-mode-bt");
+  var btnNfc      = document.getElementById("btn-mode-nfc");
+  var statusBt    = document.getElementById("status-bt");
+  var statusNfc   = document.getElementById("status-nfc");
+
+  /* ══════════════════════════════════════
+     ZONA VISUAL
+  ══════════════════════════════════════ */
+  function setZoneState(state) {
+    // state: "idle" | "scanning" | "found" | "notfound" | "error"
+    scanZone.classList.remove("scanning");
+    switch (state) {
+      case "scanning":
+        scanZone.classList.add("scanning");
+        scanIcon.innerHTML = '<i class="bi bi-upc-scan" style="animation:spin .8s linear infinite;"></i>';
+        scanLabel.textContent = "Buscando...";
+        scanSublabel.textContent = "Consultando la base de datos";
+        break;
+      case "found":
+        scanIcon.innerHTML = '<i class="bi bi-check-lg" style="color:#4ade80;"></i>';
+        scanLabel.textContent = "¡Animal encontrado!";
+        scanSublabel.textContent = "Redirigiendo en un momento...";
+        break;
+      case "notfound":
+        scanIcon.innerHTML = '<i class="bi bi-question-lg" style="color:#fbbf24;"></i>';
+        scanLabel.textContent = "RFID no registrado";
+        scanSublabel.textContent = "El código escaneado no está en el sistema";
+        break;
+      case "nfc_active":
+        scanZone.classList.add("scanning");
+        scanIcon.innerHTML = '<i class="bi bi-phone"></i>';
+        scanLabel.textContent = "NFC activo";
+        scanSublabel.textContent = "Acerca el teléfono a la chapeta del animal";
+        break;
+      default: // idle
+        scanIcon.innerHTML = '<i class="bi bi-upc-scan"></i>';
+        scanLabel.textContent = "Listo para escanear";
+        scanSublabel.textContent = currentMode === "nfc"
+          ? "Acerca el teléfono a la chapeta del animal"
+          : "Selecciona el modo según tu dispositivo";
+    }
+  }
+
+  /* ══════════════════════════════════════
+     LOOKUP
+  ══════════════════════════════════════ */
+  function doLookup(code) {
+    code = code.trim();
+    if (!code || isSearching) return;
+    isSearching = true;
+
+    setZoneState("scanning");
+    resultArea.innerHTML = "";
+
+    fetch(LOOKUP_URL + "?code=" + encodeURIComponent(code))
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        isSearching = false;
+        if (data.found) {
+          onFound(data.animal);
+        } else {
+          onNotFound(code);
+        }
+      })
+      .catch(function () {
+        isSearching = false;
+        setZoneState("idle");
+        showError("Error de red. Verifica la conexión e intenta de nuevo.");
+      });
+  }
+
+  function onFound(animal) {
+    setZoneState("found");
+
+    var estadoPill = "";
+    if (animal.estado === "ACT") estadoPill = '<span class="pill-act">Activo</span>';
+    else if (animal.estado === "INA") estadoPill = '<span class="pill-ina">Inactivo</span>';
+    else estadoPill = '<span class="pill-bor">Borrador</span>';
+
+    var acciones = '<a href="' + animal.url_detalle + '" class="btn-result-primary">'
+      + '<i class="bi bi-eye"></i>Ver ficha completa</a>';
+    if (animal.url_pesaje)
+      acciones += '<a href="' + animal.url_pesaje + '" class="btn-result-sec"><i class="bi bi-graph-up-arrow"></i>Pesaje</a>';
+    if (animal.url_evento)
+      acciones += '<a href="' + animal.url_evento + '" class="btn-result-sec"><i class="bi bi-activity"></i>Evento</a>';
+
+    resultArea.innerHTML =
+      '<div class="result-card">' +
+        '<div class="result-header result-header-found">' +
+          '<span class="result-header-icon">✅</span>' +
+          '<div>' +
+            '<div class="result-header-title">' + escHtml(animal.display) + '&nbsp;' + estadoPill + '</div>' +
+            '<div class="result-header-sub">RFID: ' + escHtml(animal.rfid) + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="result-animal">' +
+          '<div><div class="result-field-label">Raza</div><div class="result-field-value">' + (escHtml(animal.raza) || '—') + '</div></div>' +
+          '<div><div class="result-field-label">Sexo</div><div class="result-field-value">' + (escHtml(animal.sexo) || '—') + '</div></div>' +
+          '<div><div class="result-field-label">Etapa</div><div class="result-field-value">' + (escHtml(animal.etapa) || '—') + '</div></div>' +
+          '<div><div class="result-field-label">Lote / Potrero</div><div class="result-field-value">' + escHtml(animal.potrero) + '</div></div>' +
+        '</div>' +
+        '<div class="result-actions">' + acciones + '</div>' +
+      '</div>';
+
+    // Guardar en historial
+    addToHistory({ rfid: animal.rfid, display: animal.display, url: animal.url_detalle });
+
+    // Auto-redirect en 2.5 s
+    setTimeout(function () {
+      window.location.href = animal.url_detalle;
+    }, 2500);
+  }
+
+  function onNotFound(code) {
+    setZoneState("notfound");
+
+    var crearBtn = PUEDE_CREAR
+      ? '<a href="' + CREATE_URL + '?rfid=' + encodeURIComponent(code) + '" class="btn-result-primary">'
+        + '<i class="bi bi-plus-lg"></i>Registrar este animal</a>'
+      : '';
+
+    resultArea.innerHTML =
+      '<div class="result-card">' +
+        '<div class="result-header result-header-notfound">' +
+          '<span class="result-header-icon">⚠️</span>' +
+          '<div>' +
+            '<div class="result-header-title">Animal no encontrado</div>' +
+            '<div class="result-header-sub">El código no está registrado en el sistema</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="notfound-body">' +
+          'RFID escaneado: <span class="notfound-rfid">' + escHtml(code) + '</span>' +
+        '</div>' +
+        (crearBtn ? '<div class="result-actions">' + crearBtn +
+          '<button class="btn-result-sec" onclick="resetScan()"><i class="bi bi-arrow-repeat"></i>Escanear de nuevo</button>' +
+          '</div>' : '') +
+      '</div>';
+  }
+
+  function showError(msg) {
+    resultArea.innerHTML =
+      '<div class="alert alert-danger py-2" style="font-size:.82rem;border-radius:var(--r-md);">'
+      + '<i class="bi bi-exclamation-triangle me-1"></i>' + msg + '</div>';
+  }
+
+  /* Expuesto globalmente para el botón inline */
+  window.resetScan = function () {
+    resultArea.innerHTML = "";
+    rfidInput.value = "";
+    setZoneState(currentMode === "nfc" ? "nfc_active" : "idle");
+    if (currentMode === "bt") rfidInput.focus();
+  };
+
+  /* ══════════════════════════════════════
+     MODO BLUETOOTH / HID
+  ══════════════════════════════════════ */
+  rfidInput.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      var val = rfidInput.value.trim();
+      if (val) doLookup(val);
+    }
+  });
+
+  /* Auto-lookup si el lector no envía Enter (poco común pero posible) */
+  rfidInput.addEventListener("input", function () {
+    clearTimeout(debounceTimer);
+    var val = rfidInput.value.trim();
+    if (val.length >= 8) { // RFID mínimo 8 caracteres
+      debounceTimer = setTimeout(function () {
+        doLookup(val);
+      }, 600);
+    }
+  });
+
+  /* Focus automático al cargar */
+  rfidInput.focus();
+
+  /* ══════════════════════════════════════
+     MODO NFC (Web NFC API)
+  ══════════════════════════════════════ */
+  var nfcAvailable = ("NDEFReader" in window);
+
+  if (nfcAvailable) {
+    statusNfc.textContent = "Toca para activar";
+    statusNfc.className   = "mode-status status-ready";
+  }
+
+  btnNfc.addEventListener("click", function () {
+    if (!nfcAvailable) {
+      showError("Web NFC no está disponible en este navegador. Usa Chrome para Android.");
+      return;
+    }
+    if (currentMode === "nfc" && nfcReader) {
+      stopNFC();
+      return;
+    }
+    startNFC();
+  });
+
+  btnBt.addEventListener("click", function () {
+    if (currentMode === "nfc") stopNFC();
+    switchMode("bt");
+  });
+
+  function switchMode(mode) {
+    currentMode = mode;
+    btnBt.classList.toggle("active", mode === "bt");
+    btnNfc.classList.toggle("active", mode === "nfc");
+    resultArea.innerHTML = "";
+    rfidInput.value = "";
+
+    if (mode === "bt") {
+      statusBt.textContent  = "Activo";
+      statusBt.className    = "mode-status status-active";
+      statusNfc.textContent = nfcAvailable ? "Toca para activar" : "No disponible";
+      statusNfc.className   = "mode-status " + (nfcAvailable ? "status-ready" : "status-unavail");
+      setZoneState("idle");
+      rfidInput.focus();
+    } else {
+      statusBt.textContent  = "En espera";
+      statusBt.className    = "mode-status status-ready";
+      setZoneState("nfc_active");
+    }
+  }
+
+  function startNFC() {
+    switchMode("nfc");
+    statusNfc.textContent = "Iniciando...";
+    statusNfc.className   = "mode-status status-ready";
+
+    var ndef = new NDEFReader();
+    nfcReader = ndef;
+
+    ndef.scan()
+      .then(function () {
+        statusNfc.textContent = "Escaneando";
+        statusNfc.className   = "mode-status status-active";
+
+        ndef.addEventListener("reading", function (event) {
+          var code = "";
+          var records = (event.message && event.message.records) ? event.message.records : [];
+
+          for (var i = 0; i < records.length; i++) {
+            var record = records[i];
+            var payload = new Uint8Array(record.payload.buffer || record.payload);
+
+            if (record.recordType === "text") {
+              try {
+                var langLen = payload[0] & 0x3f;
+                code = new TextDecoder("utf-8").decode(payload.slice(1 + langLen)).trim();
+              } catch (e) { code = ""; }
+              if (code) break;
+            }
+
+            if (record.recordType === "url") {
+              try {
+                /* byte 0 = código de prefijo NDEF; el resto es la URL */
+                var urlPrefixes = ["","http://www.","https://www.","http://","https://",
+                  "tel:","mailto:","ftp://","ftps://","sftp://","file://"];
+                var prefix = urlPrefixes[payload[0]] || "";
+                var rest = new TextDecoder("utf-8").decode(payload.slice(1));
+                /* extraer el último segmento como código */
+                var parts = (prefix + rest).split(/[/?#]/).filter(Boolean);
+                code = parts[parts.length - 1] || "";
+              } catch (e) { code = ""; }
+              if (code) break;
+            }
+
+            /* Tipos mime o unknown: intentar como texto plano */
+            if (!code) {
+              try {
+                var raw = new TextDecoder("utf-8").decode(payload).trim();
+                if (raw && /^[\w\-:]{4,32}$/.test(raw)) code = raw;
+              } catch (e) {}
+              if (code) break;
+            }
+          }
+
+          /* Fallback primario: UID del tag (serialNumber) */
+          if (!code && event.serialNumber) {
+            code = event.serialNumber.replace(/:/g, "").toUpperCase();
+          }
+
+          if (code) {
+            doLookup(code);
+          } else {
+            showError("Se detectó una chapeta pero no se pudo leer el código. " +
+              "Verifica que la chapeta tenga datos NDEF grabados.");
+          }
+        });
+
+        ndef.addEventListener("readingerror", function (event) {
+          /* Algunas versiones de Chrome exponen serialNumber incluso en readingerror */
+          var serial = (event.serialNumber || "").replace(/:/g, "").toUpperCase();
+          if (serial) {
+            doLookup(serial);
+            return;
+          }
+          showError(
+            "No se pudo leer la chapeta. " +
+            "Mantén el teléfono <strong>completamente quieto</strong> sobre la chapeta 2–3 segundos. " +
+            "Si sigue fallando, es posible que la chapeta use 125 kHz (incompatible con NFC del teléfono): " +
+            "usa el campo manual o un lector Bluetooth."
+          );
+        });
+      })
+      .catch(function (err) {
+        stopNFC();
+        if (err.name === "NotAllowedError") {
+          showError("Permiso de NFC denegado. Habilita el NFC en los ajustes del navegador.");
+        } else {
+          showError("No se pudo activar el NFC: " + err.message);
+        }
+      });
+  }
+
+  function stopNFC() {
+    nfcReader = null;
+    statusNfc.textContent = nfcAvailable ? "Toca para activar" : "No disponible";
+    statusNfc.className   = "mode-status " + (nfcAvailable ? "status-ready" : "status-unavail");
+  }
+
+  /* ══════════════════════════════════════
+     HISTORIAL DE SESIÓN
+  ══════════════════════════════════════ */
+  function addToHistory(item) {
+    /* Evitar duplicados consecutivos */
+    if (history.length && history[0].rfid === item.rfid) return;
+    history.unshift(item);
+    if (history.length > 5) history.pop();
+    renderHistory();
+  }
+
+  function renderHistory() {
+    var wrap = document.getElementById("scan-history");
+    var list = document.getElementById("history-list");
+    if (!history.length) { wrap.style.display = "none"; return; }
+    wrap.style.display = "";
+    list.innerHTML = history.map(function (h) {
+      return '<a href="' + h.url + '" class="history-item">'
+        + '<i class="bi bi-tag-fill text-muted"></i>'
+        + '<span>' + escHtml(h.display) + '</span>'
+        + '<span class="history-rfid ms-auto">' + escHtml(h.rfid) + '</span>'
+        + '</a>';
+    }).join("");
+  }
+
+  /* ══════════════════════════════════════
+     UTILS
+  ══════════════════════════════════════ */
+  function escHtml(str) {
+    if (!str) return "";
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  /* Spin animation para el ícono de carga */
+  var style = document.createElement("style");
+  style.textContent = "@keyframes spin{to{transform:rotate(360deg)}}";
+  document.head.appendChild(style);
+
+})();
+</script>
+{% endblock %}

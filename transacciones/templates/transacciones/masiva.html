@@ -1,0 +1,436 @@
+{% extends "base/menu_base.html" %}
+{% block title %}Transacción Masiva · VacWeb{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ── Hoja centrada ── */
+  .sheet-wrapper { display:flex; justify-content:center; padding-bottom:2rem; }
+  .sheet {
+    width:100%; max-width:900px;
+    background:#fff; border-radius:18px;
+    box-shadow:0 12px 40px rgba(15,23,42,.07);
+    border:1px solid #e5e7eb; padding:1.5rem 1.75rem 1.75rem;
+  }
+  .sheet-title { font-size:1.1rem; font-weight:600; }
+  .sheet-sub   { font-size:.82rem; color:#6b7280; }
+
+  /* ── Etiquetas de campo ── */
+  .field-label { font-size:.78rem; font-weight:500; display:block; margin-bottom:.25rem; }
+  .required    { color:#ef4444; }
+  .field-help  { font-size:.72rem; color:#9ca3af; margin-top:.2rem; }
+  .section-label {
+    font-size:.72rem; text-transform:uppercase; letter-spacing:.06em;
+    color:#9ca3af; margin:1.25rem 0 .65rem;
+    padding-bottom:.3rem; border-bottom:1px solid #f3f4f6;
+  }
+
+  /* ── Tabla de animales ── */
+  .animales-table { border:1px solid #e5e7eb; border-radius:10px; overflow:hidden; }
+  .animales-table table { margin:0; }
+  .animales-table thead th {
+    font-size:.72rem; text-transform:uppercase; letter-spacing:.05em;
+    color:#9ca3af; background:#f9fafb; border-bottom:1px solid #e5e7eb;
+    padding:.55rem .75rem;
+  }
+  .animales-table tbody td {
+    font-size:.84rem; vertical-align:middle;
+    padding:.5rem .75rem; border-bottom:1px solid #f1f5f9;
+  }
+  .animales-table tbody tr:last-child td { border-bottom:none; }
+  .animales-table tbody tr.selected td { background:#f0fdf4; }
+  .animales-table tbody tr:hover td   { background:#f9fafb; }
+  .animales-table tbody tr.selected:hover td { background:#dcfce7; }
+
+  /* Input de valor por fila */
+  .valor-input {
+    width:140px; font-size:.82rem;
+    border:1px solid #d1d5db; border-radius:6px; padding:.3rem .5rem;
+  }
+  .valor-input:disabled { background:#f3f4f6; color:#9ca3af; }
+  .valor-input.is-invalid { border-color:#ef4444; }
+
+  /* Barra buscar / seleccionar todo */
+  .toolbar {
+    display:flex; align-items:center; gap:.75rem;
+    background:#f9fafb; border:1px solid #e5e7eb;
+    border-radius:8px; padding:.55rem .85rem; margin-bottom:.6rem;
+    flex-wrap:wrap;
+  }
+  .toolbar .search-box { position:relative; flex:1; min-width:180px; }
+  .toolbar .search-box input { padding-left:2rem; font-size:.82rem; }
+  .toolbar .search-box i {
+    position:absolute; left:.6rem; top:50%; transform:translateY(-50%);
+    color:#9ca3af; font-size:.85rem; pointer-events:none;
+  }
+  .count-chip { font-size:.75rem; color:#6b7280; white-space:nowrap; }
+
+  /* Sin animales */
+  .empty-state { text-align:center; padding:2.5rem 1rem; color:#9ca3af; }
+
+  /* Pie de página */
+  .sheet-footer {
+    margin-top:1.5rem; display:flex; justify-content:flex-end; gap:.75rem;
+    border-top:1px solid #e5e7eb; padding-top:1rem;
+  }
+  .btn-ganadero {
+    border-radius:999px; padding:.45rem 1.5rem; font-size:.87rem;
+    background:#020617; border-color:#020617; color:#fff;
+  }
+  .btn-ganadero:hover { opacity:.9; background:#020617; color:#fff; }
+  .btn-ganadero:disabled { opacity:.5; cursor:not-allowed; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="sheet-wrapper">
+<div class="sheet">
+
+  <!-- Encabezado -->
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <div class="sheet-title">
+        <i class="bi bi-arrow-left-right me-1 text-success"></i>Transacción Masiva
+      </div>
+      <div class="sheet-sub">
+        Selecciona los animales y completa los datos. Se creará una transacción por cada animal elegido.
+      </div>
+    </div>
+    <a href="{% url 'transacciones:list' %}" class="btn btn-light btn-sm" title="Volver al listado">
+      <i class="bi bi-x-lg"></i>
+    </a>
+  </div>
+
+  <!-- Errores generales -->
+  {% if errores %}
+  <div class="alert alert-danger py-2 mb-3">
+    <strong><i class="bi bi-exclamation-triangle me-1"></i>Corrija los siguientes errores:</strong>
+    <ul class="mb-0 mt-1">
+      {% for e in errores %}<li>{{ e }}</li>{% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <form method="post" id="form-masiva" novalidate>
+    {% csrf_token %}
+
+    <!-- ── Sección 1: Datos compartidos ── -->
+    <div class="section-label">Datos de la transacción</div>
+
+    <div class="row g-3">
+
+      <!-- Tipo -->
+      <div class="col-12 col-md-3">
+        <label class="field-label" for="{{ form.tipo.id_for_label }}">
+          Tipo <span class="required">*</span>
+        </label>
+        {{ form.tipo }}
+        {% if form.tipo.errors %}
+          <div class="text-danger" style="font-size:.77rem;">{{ form.tipo.errors.0 }}</div>
+        {% endif %}
+      </div>
+
+      <!-- Fecha -->
+      <div class="col-12 col-md-3">
+        <label class="field-label" for="{{ form.fecha.id_for_label }}">
+          Fecha <span class="required">*</span>
+        </label>
+        {{ form.fecha }}
+        {% if form.fecha.errors %}
+          <div class="text-danger" style="font-size:.77rem;">{{ form.fecha.errors.0 }}</div>
+        {% endif %}
+      </div>
+
+      <!-- Destino -->
+      <div class="col-12 col-md-6">
+        <label class="field-label" for="{{ form.origen_destino.id_for_label }}">
+          Destino <span class="required">*</span>
+        </label>
+        {{ form.origen_destino }}
+        {% if form.origen_destino.errors %}
+          <div class="text-danger" style="font-size:.77rem;">{{ form.origen_destino.errors.0 }}</div>
+        {% endif %}
+        <div class="field-help">Frigorífico, finca compradora, etc.</div>
+      </div>
+
+      <!-- Observaciones -->
+      <div class="col-12">
+        <label class="field-label" for="{{ form.observaciones.id_for_label }}">Observaciones</label>
+        {{ form.observaciones }}
+        {% if form.observaciones.errors %}
+          <div class="text-danger" style="font-size:.77rem;">{{ form.observaciones.errors.0 }}</div>
+        {% endif %}
+      </div>
+
+    </div>
+
+    <!-- ── Sección 2: Selección de animales ── -->
+    <div class="section-label">
+      Animales activos disponibles
+      <span class="count-chip ms-2" id="lbl-count">
+        (0 de {{ animales|length }} seleccionados)
+      </span>
+    </div>
+
+    {% if animales %}
+
+    <!-- Barra de herramientas -->
+    <div class="toolbar">
+      <div class="search-box">
+        <i class="bi bi-search"></i>
+        <input type="text" class="form-control form-control-sm" id="buscar-animal"
+               placeholder="Buscar por RFID, nombre o potrero…">
+      </div>
+      <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-sel-all" style="border-radius:6px;">
+        Seleccionar todos
+      </button>
+      <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-desel-all" style="border-radius:6px;">
+        Deseleccionar todos
+      </button>
+    </div>
+
+    <!-- Tabla de animales -->
+    <div class="animales-table">
+      <div style="max-height:360px; overflow-y:auto;">
+        <table class="table table-hover mb-0" id="tabla-animales">
+          <thead>
+            <tr>
+              <th style="width:40px;"></th>
+              <th>RFID / Nombre</th>
+              <th>Etapa</th>
+              <th>Potrero</th>
+              <th>Peso entrada (kg)</th>
+              <th>Valor COP <span class="required">*</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for animal in animales %}
+            <tr class="animal-row"
+                data-pk="{{ animal.pk }}"
+                data-rfid="{{ animal.rfid|default:'' }}"
+                data-nombre="{{ animal.nombre|default:'' }}"
+                data-potrero="{{ animal.potrero.nombre|default:'' }}">
+
+              <!-- Checkbox -->
+              <td class="text-center">
+                <input type="checkbox"
+                       class="form-check-input chk-animal"
+                       name="animal_ids"
+                       value="{{ animal.pk }}"
+                       id="chk_{{ animal.pk }}">
+              </td>
+
+              <!-- Identificación -->
+              <td>
+                <label for="chk_{{ animal.pk }}" style="cursor:pointer;margin:0;">
+                  {% if animal.rfid %}
+                    <span class="fw-medium">{{ animal.rfid }}</span>
+                    {% if animal.nombre %}
+                      <span class="text-muted" style="font-size:.78rem;"> · {{ animal.nombre }}</span>
+                    {% endif %}
+                  {% else %}
+                    <span class="fw-medium">{{ animal.nombre|default:"SIN-ID" }}</span>
+                  {% endif %}
+                </label>
+              </td>
+
+              <!-- Etapa -->
+              <td>
+                <span class="badge bg-light text-dark border" style="font-size:.7rem;">
+                  {{ animal.get_etapa_display|default:"—" }}
+                </span>
+              </td>
+
+              <!-- Potrero -->
+              <td class="text-muted" style="font-size:.8rem;">
+                {{ animal.potrero.nombre|default:"Sin potrero" }}
+              </td>
+
+              <!-- Peso -->
+              <td class="text-muted" style="font-size:.8rem;">
+                {% if animal.peso_entrada %}{{ animal.peso_entrada }} kg{% else %}—{% endif %}
+              </td>
+
+              <!-- Valor COP (por animal) — JS gestiona el valor pre-cargado y el disabled -->
+              <td>
+                <input type="number"
+                       name="valor_{{ animal.pk }}"
+                       id="val_{{ animal.pk }}"
+                       class="valor-input"
+                       step="0.01" min="0.01"
+                       placeholder="0.00"
+                       disabled>
+              </td>
+
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {% else %}
+    <!-- Sin animales activos -->
+    <div class="empty-state animales-table">
+      <i class="bi bi-emoji-frown d-block fs-2 mb-2"></i>
+      <div class="fw-medium">No hay animales activos disponibles</div>
+      <div style="font-size:.82rem;">Solo los animales en estado <strong>Activo</strong> pueden incluirse en una venta o sacrificio.</div>
+      <a href="{% url 'animals:list' %}" class="btn btn-sm btn-outline-success mt-3" style="border-radius:999px;">
+        <i class="bi bi-tag me-1"></i>Ver animales
+      </a>
+    </div>
+    {% endif %}
+
+    <!-- Pie de formulario -->
+    <div class="sheet-footer">
+      <a href="{% url 'transacciones:list' %}" class="btn btn-outline-secondary"
+         style="border-radius:999px; padding:.45rem 1.2rem; font-size:.87rem;">
+        Cancelar
+      </a>
+      {% if animales %}
+      <button type="submit" class="btn btn-ganadero" id="btn-submit" disabled>
+        <i class="bi bi-check2-all me-1"></i>
+        Registrar transacciones (<span id="lbl-submit-count">0</span>)
+      </button>
+      {% endif %}
+    </div>
+
+  </form>
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  "use strict";
+
+  /* ── Datos desde el servidor (pre-selección y valores al volver de POST con error) ── */
+  const selectedIds = new Set({{ selected_ids_json|default:"[]"|safe }});
+  const valoresPost = {{ valores_post_json|default:"{}"|safe }};
+
+  /* ── Referencias ── */
+  const checkboxes = document.querySelectorAll(".chk-animal");
+  const btnSelAll  = document.getElementById("btn-sel-all");
+  const btnDeselAll= document.getElementById("btn-desel-all");
+  const buscar     = document.getElementById("buscar-animal");
+  const lblCount   = document.getElementById("lbl-count");
+  const lblSubmit  = document.getElementById("lbl-submit-count");
+  const btnSubmit  = document.getElementById("btn-submit");
+  const total      = checkboxes.length;
+
+  /* ── Actualizar contador y botón submit ── */
+  function actualizarContador() {
+    const sel = [...checkboxes].filter(c => c.checked).length;
+    if (lblCount)  lblCount.textContent  = `(${sel} de ${total} seleccionados)`;
+    if (lblSubmit) lblSubmit.textContent = sel;
+    if (btnSubmit) btnSubmit.disabled    = sel === 0;
+  }
+
+  /* ── Habilitar/deshabilitar el input de valor según checkbox ── */
+  function toggleValorInput(chk, skipFocus) {
+    const pk    = chk.value;
+    const input = document.getElementById(`val_${pk}`);
+    const row   = chk.closest("tr");
+    if (!input) return;
+
+    if (chk.checked) {
+      input.disabled = false;
+      row.classList.add("selected");
+      // Restaurar valor previo si viene de un POST fallido
+      if (valoresPost[pk] !== undefined && !input.value) {
+        input.value = valoresPost[pk];
+      }
+      if (!skipFocus) input.focus();
+    } else {
+      input.disabled = true;
+      row.classList.remove("selected");
+    }
+  }
+
+  /* ── Pre-seleccionar los animales que venían en el POST fallido ── */
+  checkboxes.forEach(chk => {
+    if (selectedIds.has(chk.value)) {
+      chk.checked = true;
+    }
+    toggleValorInput(chk, /*skipFocus=*/true);
+
+    chk.addEventListener("change", function () {
+      toggleValorInput(this, false);
+      actualizarContador();
+    });
+
+    // Click en cualquier celda de la fila (excepto inputs/labels) activa el checkbox
+    const row = chk.closest("tr");
+    row.addEventListener("click", function (e) {
+      if (e.target.tagName === "INPUT" || e.target.tagName === "LABEL") return;
+      chk.checked = !chk.checked;
+      toggleValorInput(chk, false);
+      actualizarContador();
+    });
+  });
+
+  /* ── Seleccionar / deseleccionar todos (solo filas visibles) ── */
+  if (btnSelAll) {
+    btnSelAll.addEventListener("click", function () {
+      document.querySelectorAll(".animal-row").forEach(row => {
+        if (row.style.display === "none") return;
+        const chk = row.querySelector(".chk-animal");
+        if (chk && !chk.checked) { chk.checked = true; toggleValorInput(chk, true); }
+      });
+      actualizarContador();
+    });
+  }
+
+  if (btnDeselAll) {
+    btnDeselAll.addEventListener("click", function () {
+      checkboxes.forEach(chk => { chk.checked = false; toggleValorInput(chk, true); });
+      actualizarContador();
+    });
+  }
+
+  /* ── Búsqueda en tiempo real ── */
+  if (buscar) {
+    buscar.addEventListener("input", function () {
+      const q = this.value.trim().toLowerCase();
+      document.querySelectorAll(".animal-row").forEach(row => {
+        const match = !q
+          || row.dataset.rfid.toLowerCase().includes(q)
+          || row.dataset.nombre.toLowerCase().includes(q)
+          || row.dataset.potrero.toLowerCase().includes(q);
+        row.style.display = match ? "" : "none";
+      });
+    });
+  }
+
+  /* ── Validación del lado cliente antes de enviar ── */
+  const formMasiva = document.getElementById("form-masiva");
+  if (formMasiva) {
+    formMasiva.addEventListener("submit", function (e) {
+      const selChk = [...checkboxes].filter(c => c.checked);
+      let valido = true;
+
+      selChk.forEach(chk => {
+        const input = document.getElementById(`val_${chk.value}`);
+        if (!input) return;
+        const v = parseFloat(input.value);
+        if (!input.value.trim() || isNaN(v) || v <= 0) {
+          input.classList.add("is-invalid");
+          valido = false;
+        } else {
+          input.classList.remove("is-invalid");
+        }
+      });
+
+      if (!valido) {
+        e.preventDefault();
+        alert("Ingrese un valor mayor a cero para todos los animales seleccionados.");
+      }
+    });
+  }
+
+  /* ── Estado inicial ── */
+  actualizarContador();
+
+})();
+</script>
+{% endblock %}

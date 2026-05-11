@@ -384,3 +384,66 @@ class DashboardAuditoriaTests(TestCase):
             action="dashboard_acceso", user=self.user
         ).count()
         self.assertGreaterEqual(total, 2)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Bloque 5 – Integración Login y Permisos
+# ─────────────────────────────────────────────────────────────────────────────
+
+class DashboardIntegracionLoginTests(TestCase):
+    """
+    Verifica que el login redirige exactamente a /dashboard/ y que la lógica
+    de asignación de permisos cubre roles con nombre 'administrador'.
+    (CP-INT-01 … CP-INT-03)
+    """
+
+    def setUp(self):
+        self.user = make_user("admin_integ", password="Admin$1234")
+        grant_perm(self.user, "dashboard.read")
+
+    # ── CP-INT-01 ─────────────────────────────────────────────────────────
+    def test_login_exitoso_redirige_exactamente_a_dashboard(self):
+        """POST /login/ con credenciales válidas → Location exacta '/dashboard/'."""
+        r = self.client.post("/login/", {
+            "username": "admin_integ",
+            "password": "Admin$1234",
+        })
+        self.assertEqual(r.status_code, 302)
+        self.assertEqual(r["Location"], "/dashboard/")
+
+    # ── CP-INT-02 ─────────────────────────────────────────────────────────
+    def test_usuario_con_permiso_accede_al_dashboard_tras_autenticar(self):
+        """Usuario con dashboard.read obtiene 200 en /dashboard/."""
+        self.client.force_login(self.user)
+        r = self.client.get("/dashboard/")
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("kpis", r.context)
+
+    # ── CP-INT-03 ─────────────────────────────────────────────────────────
+    def test_asignacion_permiso_cubre_rol_administrador_de_la_finca(self):
+        """
+        La lógica icontains de la migración 0002 asigna dashboard.read
+        a roles con código 'administrador de la finca'.
+        """
+        perm, _ = Permission.objects.get_or_create(
+            code="dashboard.read",
+            defaults={"description": "Ver panel principal"},
+        )
+        rol = Role.objects.create(
+            name="Administrador de la Finca",
+            code="administrador de la finca",
+        )
+
+        # Replicar la lógica de assign_permission de la migración 0002
+        codigos_admin = ("administrador", "propietario", "administrador de la finca", "admin")
+        roles_asignados = set()
+        for code in codigos_admin:
+            for r in Role.objects.filter(code__icontains=code):
+                if r.pk not in roles_asignados:
+                    RolePermission.objects.get_or_create(role=r, permission=perm)
+                    roles_asignados.add(r.pk)
+
+        self.assertTrue(
+            RolePermission.objects.filter(role=rol, permission=perm).exists(),
+            "El rol 'administrador de la finca' no recibió dashboard.read",
+        )

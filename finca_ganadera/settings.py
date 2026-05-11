@@ -24,6 +24,7 @@ INSTALLED_APPS = [
     "reportes",      # app del CU-007
     "alertas",       # app del CU-008
     "dashboard",     # app del CU-009
+    "auditoria",     # app del CU-010
 ]
 
 MIDDLEWARE = [
@@ -34,6 +35,9 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # CU-010: Middleware de interceptación automática de auditoría
+    # Debe ir DESPUÉS de AuthenticationMiddleware para que request.user esté disponible
+    "auditoria.middleware.AuditoriaMiddleware",
     # Middleware para auditar 403 (CU-001, RN-4)
     "authz.middleware.Log403Middleware",
     # Middleware para mostrar 404.html personalizado incluso con DEBUG=True
@@ -130,4 +134,10 @@ STATIC_URL = "static/"
 
 MEDIA_URL = "/media/"              # OJO: con / al inicio y al final
 MEDIA_ROOT = BASE_DIR / "media"    # <proyecto>/media
+
+# --- Túnel ngrok para pruebas en dispositivos móviles (HTTPS requerido por Web NFC)
+CSRF_TRUSTED_ORIGINS = [
+    "https://*.ngrok-free.app",
+    "https://*.ngrok.io",
+]
 

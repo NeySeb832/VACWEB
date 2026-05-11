@@ -12,6 +12,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 
 from animals.models import Animal
 from authz.decorators import require_perm
+from authz.utils import has_perm_code
 from potreros.models import Potrero
 from .models import EventoSanitario
 from .forms import EventoSanitarioForm, CorreccionEventoForm, EventoMasivoForm
@@ -50,6 +51,7 @@ def evento_list(request):
         "estado": estado,
         "animales": Animal.objects.order_by("rfid", "nombre"),
         "estado_choices": EventoSanitario.Estado.choices,
+        "puede_masivo": has_perm_code(request.user, "eventos.write"),
     }
     return render(request, "eventos/evento_list.html", ctx)
 

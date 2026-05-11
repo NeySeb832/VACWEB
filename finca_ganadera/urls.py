@@ -40,6 +40,7 @@ urlpatterns = [
     path("reportes/",      include("reportes.urls",      namespace="reportes")),
     path("alertas/",       include("alertas.urls",        namespace="alertas")),
     path("dashboard/",     include("dashboard.urls",      namespace="dashboard")),
+    path("auditoria/",     include("auditoria.urls",      namespace="auditoria")),
 ]
 
 if settings.DEBUG:
