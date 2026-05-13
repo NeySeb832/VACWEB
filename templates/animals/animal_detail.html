@@ -669,6 +669,9 @@
 
 </div>
 
+{% endblock %}
+
+{% block modals %}
 <!-- Modal transacciones AJAX -->
 {% if puede_leer_transacciones and puede_escribir_transacciones and animal.estado != 'INA' %}
 <div class="modal fade" id="modalTransaccionFicha" tabindex="-1" aria-hidden="true">
@@ -687,7 +690,6 @@
   </div>
 </div>
 {% endif %}
-
 {% endblock %}
 
 {% block extra_js %}

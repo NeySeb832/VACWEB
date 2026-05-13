@@ -156,6 +156,9 @@
   </div>
 </div>
 
+{% endblock %}
+
+{% block modals %}
 <!-- Modal de anulación -->
 {% if puede_anular and transaccion.es_anulable %}
 <div class="modal fade" id="modalAnular" tabindex="-1" aria-labelledby="modalAnularLabel" aria-hidden="true">
@@ -174,7 +177,6 @@
   </div>
 </div>
 {% endif %}
-
 {% endblock %}
 
 {% block extra_js %}

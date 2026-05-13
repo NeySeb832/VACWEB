@@ -403,6 +403,9 @@
   </div>
 </div>
 
+{% endblock %}
+
+{% block modals %}
 <!-- ── Modal: Marcar como Realizado ── -->
 {% if puede_modificarse %}
 <div class="modal fade" id="modalRealizar" tabindex="-1" aria-labelledby="modalRealizarLabel" aria-hidden="true">
@@ -487,7 +490,6 @@
   </div>
 </div>
 {% endif %}
-
 {% endblock %}
 
 {% block extra_js %}

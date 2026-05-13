@@ -33,7 +33,20 @@
       "Bash(python manage.py test authz --noinput -v 1)",
       "Bash(python manage.py createcachetable)",
       "Bash(dir \"C:\\\\Users\\\\seb83\\\\Documents\\\\Universidad\\\\Practica de ingenieria 3\\\\Proyecto\\\\Aplicacion web gestion animales\\\\templates\\\\auth\\\\\")",
-      "PowerShell($p = \"C:\\\\Users\\\\seb83\\\\Documents\\\\Universidad\\\\Practica de ingenieria 3\\\\Proyecto\\\\Aplicacion web gestion animales\\\\templates\\\\auth\"; [System.IO.Directory]::GetFiles\\($p\\) | ForEach-Object { [System.IO.Path]::GetFileName\\($_\\) })"
+      "PowerShell($p = \"C:\\\\Users\\\\seb83\\\\Documents\\\\Universidad\\\\Practica de ingenieria 3\\\\Proyecto\\\\Aplicacion web gestion animales\\\\templates\\\\auth\"; [System.IO.Directory]::GetFiles\\($p\\) | ForEach-Object { [System.IO.Path]::GetFileName\\($_\\) })",
+      "Bash(python manage.py migrate alertas)",
+      "Bash(python manage.py loaddata alertas/fixtures/reglas_alerta.json)",
+      "Bash(python manage.py generar_alertas)",
+      "Bash(python manage.py migrate alertas 0002_add_permissions)",
+      "Bash(python manage.py shell -c ' *)",
+      "Bash(python manage.py test alertas --verbosity=2)",
+      "PowerShell(winget install *)",
+      "PowerShell(ngrok config *)",
+      "PowerShell(Get-ChildItem *)",
+      "PowerShell($ngrok = \"C:\\\\Users\\\\seb83\\\\AppData\\\\Local\\\\Microsoft\\\\WinGet\\\\Packages\\\\Ngrok.Ngrok_Microsoft.Winget.Source_8wekyb3d8bbwe\\\\ngrok.exe\"; & $ngrok config add-authtoken cr_2xW82uz3m5zi9wN4LgZ9A72TqWr)",
+      "PowerShell($ngrok = \"C:\\\\Users\\\\seb83\\\\AppData\\\\Local\\\\Microsoft\\\\WinGet\\\\Packages\\\\Ngrok.Ngrok_Microsoft.Winget.Source_8wekyb3d8bbwe\\\\ngrok.exe\"; & $ngrok update)",
+      "PowerShell($ngrok = \"C:\\\\Users\\\\seb83\\\\AppData\\\\Local\\\\Microsoft\\\\WinGet\\\\Packages\\\\Ngrok.Ngrok_Microsoft.Winget.Source_8wekyb3d8bbwe\\\\ngrok.exe\"; & $ngrok --version)",
+      "WebSearch"
     ]
   }
 }

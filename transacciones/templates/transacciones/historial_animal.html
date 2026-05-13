@@ -215,6 +215,9 @@
 </div>
 {% endif %}
 
+{% endblock %}
+
+{% block modals %}
 <!-- Modal contenedor AJAX -->
 {% if puede_escribir %}
 <div class="modal fade" id="modalTransaccion" tabindex="-1" aria-hidden="true">
@@ -233,7 +236,6 @@
   </div>
 </div>
 {% endif %}
-
 {% endblock %}
 
 {% block extra_js %}

@@ -309,6 +309,9 @@
   </div>
 </div>
 
+{% endblock %}
+
+{% block modals %}
 <!-- ============================================================
      MODAL CREAR / EDITAR POTRERO
 ============================================================ -->
@@ -391,7 +394,6 @@
     </div>
   </div>
 </div>
-
 {% endblock %}
 
 {% block extra_js %}
@@ -446,9 +448,20 @@
       fetch("{% url 'potreros:create' %}", {
         headers: {'X-Requested-With': 'XMLHttpRequest'},
       })
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
       .then(data => {
+        if (!data.html) throw new Error('Respuesta inesperada del servidor.');
         document.getElementById('modalPotreroBody').innerHTML = data.html;
+      })
+      .catch(() => {
+        document.getElementById('modalPotreroBody').innerHTML =
+          '<div class="text-center py-4 text-danger">' +
+          '<i class="bi bi-exclamation-triangle d-block mb-2" style="font-size:1.6rem;"></i>' +
+          '<span style="font-size:.88rem;">Error al cargar el formulario. Intenta de nuevo.</span>' +
+          '</div>';
       });
     });
   }
@@ -468,9 +481,20 @@
     fetch(`/potreros/${pkActualEdicion}/editar/`, {
       headers: {'X-Requested-With': 'XMLHttpRequest'},
     })
-    .then(r => r.json())
+    .then(r => {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
     .then(data => {
+      if (!data.html) throw new Error('Respuesta inesperada del servidor.');
       document.getElementById('modalPotreroBody').innerHTML = data.html;
+    })
+    .catch(() => {
+      document.getElementById('modalPotreroBody').innerHTML =
+        '<div class="text-center py-4 text-danger">' +
+        '<i class="bi bi-exclamation-triangle d-block mb-2" style="font-size:1.6rem;"></i>' +
+        '<span style="font-size:.88rem;">Error al cargar el formulario. Intenta de nuevo.</span>' +
+        '</div>';
     });
   });
 
@@ -495,11 +519,18 @@
     .then(r => r.json())
     .then(data => {
       if (data.success) {
+        const warning = data.warning;
+        let done = false;
+        const afterHide = function () {
+          if (done) return;
+          done = true;
+          if (warning) alert('Advertencia: ' + warning);
+          location.href = location.pathname + location.search;
+        };
+        document.getElementById('modalPotrero')
+          .addEventListener('hidden.bs.modal', afterHide, { once: true });
         modalPotrero.hide();
-        if (data.warning) {
-          alert('Advertencia: ' + data.warning);
-        }
-        location.reload();
+        setTimeout(afterHide, 500);
       } else {
         mostrarErrores(data.errors || {});
       }
@@ -532,17 +563,33 @@
     })
     .then(r => r.json())
     .then(data => {
-      modalDesactivar.hide();
       if (data.success) {
-        location.reload();
+        let done = false;
+        const afterHideDeactivar = function () {
+          if (done) return;
+          done = true;
+          location.href = location.pathname + location.search;
+        };
+        document.getElementById('modalDesactivar')
+          .addEventListener('hidden.bs.modal', afterHideDeactivar, { once: true });
+        modalDesactivar.hide();
+        setTimeout(afterHideDeactivar, 500);
       } else if (data.blocked) {
-        document.getElementById('bloqueoMsg').textContent = data.message;
-        const lista = (data.animales || []).map(
-          a => `<li>${a.rfid} — ${a.nombre_alias}</li>`
-        ).join('');
-        document.getElementById('bloqueoAnimales').innerHTML =
-          lista ? `<ul class="mb-0" style="font-size:.83rem;">${lista}</ul>` : '';
-        modalBloqueo.show();
+        // Esperar a que el modal de confirmación cierre antes de abrir el de bloqueo
+        document.getElementById('modalDesactivar').addEventListener(
+          'hidden.bs.modal',
+          function () {
+            document.getElementById('bloqueoMsg').textContent = data.message;
+            const lista = (data.animales || []).map(
+              a => `<li>${a.rfid} — ${a.nombre_alias}</li>`
+            ).join('');
+            document.getElementById('bloqueoAnimales').innerHTML =
+              lista ? `<ul class="mb-0" style="font-size:.83rem;">${lista}</ul>` : '';
+            modalBloqueo.show();
+          },
+          { once: true }
+        );
+        modalDesactivar.hide();
       } else {
         alert(data.message || 'Error al desactivar.');
       }
