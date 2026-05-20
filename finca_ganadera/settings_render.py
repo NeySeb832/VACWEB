@@ -60,14 +60,19 @@ if "whitenoise.middleware.WhiteNoiseMiddleware" not in MIDDLEWARE:
         + MIDDLEWARE[_security_idx + 1 :]
     )
 
-# Recolección y compresión de estáticos con manifiesto.
+# Recolección y compresión de estáticos.
+# IMPORTANTE: usamos CompressedStaticFilesStorage (sin "Manifest") porque
+# algunos templates (ej. home.html) referencian {% static '...' %} sobre
+# archivos que no están físicamente en el proyecto. La variante con manifiesto
+# es estricta y lanza 500 ante esas referencias; la variante simple devuelve
+# la URL aunque el archivo no exista (sale rota en HTML pero no rompe el render).
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STORAGES = {
     "default": {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
     },
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
     },
 }
 
@@ -85,6 +90,41 @@ EMAIL_BACKEND = os.environ.get(
     "django.core.mail.backends.console.EmailBackend",
 )
 DEFAULT_FROM_EMAIL = os.environ.get("DJANGO_DEFAULT_FROM_EMAIL", "no-reply@finca.local")
+
+# ─── Logging: mandar tracebacks de errores 500 a stderr (visible en Render) ──
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "[{asctime}] {levelname} {name}: {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",
+    },
+    "loggers": {
+        # Mostrar tracebacks de las excepciones que Django captura en views.
+        "django.request": {
+            "handlers": ["console"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+        "django.security": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+    },
+}
 
 # ─── Endurecimiento de seguridad (se activa solo si DEBUG=False) ─────────────
 if not DEBUG:
