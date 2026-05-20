@@ -392,6 +392,11 @@ def reporte_sanitario(request):
     eventos = list(qs)
     potreros = Potrero.objects.filter(estado=Potrero.Estado.ACTIVO).order_by("nombre_codigo")
 
+    # KPI agregados — calcularlos ANTES de cualquier export porque el bloque
+    # de PDF (mas abajo) los referencia y daria UnboundLocalError si no.
+    confirmados = sum(1 for e in eventos if e.estado == EventoSanitario.Estado.CONFIRMADO)
+    aplazados   = sum(1 for e in eventos if e.estado == EventoSanitario.Estado.APLAZADO)
+
     if exportar == "csv" and not error_fechas:
         _registrar_log(request, "sanitario", filtros, "csv")
         resp = _csv_response(f"reporte_sanitario_{hoy}.csv")
@@ -420,7 +425,7 @@ def reporte_sanitario(request):
         kpi = {
             "total_eventos": len(eventos),
             "confirmados": confirmados,
-            "aplazados": aplicados,
+            "aplazados": aplazados,
         }
         pdf_bytes = generar_pdf_sanitario(eventos, kpi, meta)
         nombre = f"SIGAN_Sanitario_{hoy}.pdf"
@@ -429,14 +434,11 @@ def reporte_sanitario(request):
     if not exportar and not error_fechas:
         _registrar_log(request, "sanitario", filtros)
 
-    confirmados = sum(1 for e in eventos if e.estado == EventoSanitario.Estado.CONFIRMADO)
-    aplicados   = sum(1 for e in eventos if e.estado == EventoSanitario.Estado.APLAZADO)
-
     ctx = {
         "eventos":        eventos,
         "total_eventos":  len(eventos),
         "confirmados":    confirmados,
-        "aplicados":      aplicados,
+        "aplicados":      aplazados,
         "potreros":       potreros,
         "desde":          desde_raw,
         "hasta":          hasta_raw,
