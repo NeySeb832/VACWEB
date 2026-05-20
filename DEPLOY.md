@@ -142,6 +142,76 @@ Render detecta el push y redespliega automáticamente.
 
 ---
 
+## Configuración de email (Gmail / Google Workspace)
+
+VACWEB envía dos tipos de correo: la **invitación de activación** (CU-001 RN-9) y el **enlace de recuperación de contraseña** (CU-001 CP-05). En local los correos se imprimen en consola (`EmailBackend` console). En Render se mandan por SMTP real.
+
+### Paso 1 — Habilitar 2FA en tu cuenta de Gmail/Workspace
+
+Las App Passwords solo están disponibles si tenés la verificación en dos pasos activa.
+
+1. Entrá a [https://myaccount.google.com/security](https://myaccount.google.com/security) con `norozcov@ucentral.edu.co` (o tu Gmail personal).
+2. **Verificación en dos pasos** → activala. Te va a pedir el celular para SMS o app autenticadora.
+
+> ⚠️ **Si es cuenta institucional de la U. Central** y la opción aparece bloqueada o gris, el administrador del Workspace deshabilitó las App Passwords. En ese caso usá una cuenta Gmail personal o pedile al admin que habilite "App Passwords" para tu usuario.
+
+### Paso 2 — Generar la App Password
+
+1. Una vez activa la 2FA, entrá a [https://myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords).
+2. **App name**: poné `VACWEB Render`.
+3. Click **Create**.
+4. Copiá la contraseña de **16 caracteres** que muestra (ej: `abcd efgh ijkl mnop`). Ignorá los espacios o dejalos, Gmail acepta ambos.
+
+> Esta contraseña NO es la de tu correo. Es una contraseña independiente solo para apps SMTP. Si la perdés, generás otra.
+
+### Paso 3 — Configurar las variables en Render
+
+Hay dos formas según cuándo creaste el servicio:
+
+**Si el servicio ya existe** (el deploy actual):
+
+1. Render Dashboard → tu servicio `vacweb` → **Environment**.
+2. **Add Environment Variable** para cada uno de los siguientes:
+
+   | Key | Value |
+   |---|---|
+   | `DJANGO_EMAIL_BACKEND` | `django.core.mail.backends.smtp.EmailBackend` |
+   | `EMAIL_HOST` | `smtp.gmail.com` |
+   | `EMAIL_PORT` | `587` |
+   | `EMAIL_USE_TLS` | `True` |
+   | `EMAIL_HOST_USER` | `norozcov@ucentral.edu.co` |
+   | `EMAIL_HOST_PASSWORD` | la App Password de 16 caracteres del paso 2 |
+   | `DJANGO_DEFAULT_FROM_EMAIL` | `VACWEB <norozcov@ucentral.edu.co>` |
+
+3. **Save Changes** → el servicio reinicia en ~30 segundos con las nuevas variables.
+
+**Si vas a crear el blueprint desde cero**: el `render.yaml` ya declara estas variables. Las marcadas con `sync: false` (`EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `DJANGO_DEFAULT_FROM_EMAIL`) las completás manualmente en el panel después del primer deploy.
+
+### Paso 4 — Probar el envío
+
+Desde el **Shell** del servicio Render:
+
+```bash
+python manage.py shell -c "from django.core.mail import send_mail; send_mail('Test VACWEB', 'Funciona!', None, ['tu-correo-personal@gmail.com'])"
+```
+
+Si llega el correo (revisá también spam), el SMTP está OK. Probá entonces:
+
+1. Crear un usuario nuevo desde la UI (CU-001) → debería recibir el correo de invitación con el botón verde.
+2. En el login, click "Olvidé mi contraseña" → debería llegar el correo de recuperación.
+
+### Solución a problemas comunes de SMTP
+
+| Error en logs | Causa probable | Solución |
+|---|---|---|
+| `SMTPAuthenticationError: Username and Password not accepted` | App Password mal copiada o 2FA no activado | Regenerá la App Password y verificá 2FA |
+| `SMTPServerDisconnected` | Política institucional bloquea SMTP externo | Usar cuenta Gmail personal o pedir excepción al admin |
+| `Connection unexpectedly closed: timed out` | `EMAIL_TIMEOUT` muy bajo o red de Render bloqueada | Subí `EMAIL_TIMEOUT` a `30` |
+| Correo llega a spam | Falta SPF/DKIM (no configurable en Gmail personal) | Aviso al destinatario para mover a inbox; en producción real, usar servicio dedicado (Brevo, SendGrid) |
+| `[Errno -3] Temporary failure in name resolution` | DNS de Render no resuelve | Reintentar el deploy |
+
+---
+
 ## Volver a desarrollo local
 
 Tu `main` no fue tocada por nada de esto. Para volver a desarrollar:

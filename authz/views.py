@@ -6,7 +6,6 @@ from django.contrib.auth.views import (
     PasswordResetView, PasswordResetConfirmView,
 )
 from django.core.cache import cache
-from django.core.mail import send_mail
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Q
@@ -25,6 +24,7 @@ from .models import AuditLog, Role, Permission, RolePermission, UserRole, UserPr
 from .decorators import require_perm
 from .utils import user_permission_codes
 from .forms import UserCreateForm, UserInviteForm, InvitationSetPasswordForm, UserEditForm, PasswordSetForm, RoleForm
+from .emails import send_invitation_email
 
 # --- Helper: revocación de sesiones activas (CU-001 CP-12, RN-2)
 def _revoke_user_sessions(user):
@@ -240,20 +240,12 @@ def user_create(request):
                 activate_url = request.build_absolute_uri(
                     reverse("authz:invitation_activate", args=[invitation.token])
                 )
-                # Enviar email (en dev queda en consola)
-                if user.email:
-                    send_mail(
-                        subject="Invitación a GanaderoPro — Activa tu cuenta",
-                        message=(
-                            f"Hola {user.get_full_name() or user.username},\n\n"
-                            f"Fuiste invitado al sistema GanaderoPro.\n"
-                            f"Activa tu cuenta aquí:\n{activate_url}\n\n"
-                            f"El enlace expira en {expiry_hours} horas.\n"
-                        ),
-                        from_email=settings.DEFAULT_FROM_EMAIL,
-                        recipient_list=[user.email],
-                        fail_silently=True,
-                    )
+                # Enviar email branded HTML+texto (en dev queda en consola)
+                send_invitation_email(
+                    user=user,
+                    activate_url=activate_url,
+                    expiry_hours=expiry_hours,
+                )
                 # Auditoría
                 AuditLog.objects.create(
                     user=request.user,
@@ -566,6 +558,11 @@ def role_edit(request, pk: int):
 class AuditedPasswordResetView(PasswordResetView):
     """Extiende la vista de Django para auditar solicitudes de recuperación."""
     template_name = "auth/password_reset_form.html"
+    # Templates del correo: ambos viven en templates/registration/ siguiendo
+    # la convención que busca Django por defecto.
+    subject_template_name = "registration/password_reset_subject.txt"
+    email_template_name = "registration/password_reset_email.html"          # texto plano
+    html_email_template_name = "registration/password_reset_email_html.html"  # versión HTML
 
     def form_valid(self, form):
         email = form.cleaned_data.get("email", "")

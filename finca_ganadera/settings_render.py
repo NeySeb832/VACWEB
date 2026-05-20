@@ -84,12 +84,27 @@ _extra_csrf = os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "")
 if _extra_csrf:
     CSRF_TRUSTED_ORIGINS.extend(o.strip() for o in _extra_csrf.split(",") if o.strip())
 
-# ─── Email opcional vía SMTP (por defecto consola, igual que local) ──────────
+# ─── Email vía SMTP (Gmail / Google Workspace) ───────────────────────────────
+# En Render se configuran estas variables; si no están definidas, cae a consola.
 EMAIL_BACKEND = os.environ.get(
     "DJANGO_EMAIL_BACKEND",
     "django.core.mail.backends.console.EmailBackend",
 )
-DEFAULT_FROM_EMAIL = os.environ.get("DJANGO_DEFAULT_FROM_EMAIL", "no-reply@finca.local")
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "smtp.gmail.com")
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
+EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "True").lower() in ("1", "true", "yes")
+EMAIL_USE_SSL = os.environ.get("EMAIL_USE_SSL", "False").lower() in ("1", "true", "yes")
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+EMAIL_TIMEOUT = int(os.environ.get("EMAIL_TIMEOUT", "20"))  # segundos
+
+# Remitente visible en los correos. Convención Gmail: usar el mismo correo del
+# EMAIL_HOST_USER, opcionalmente con nombre amigable: "VACWEB <correo@dominio>".
+DEFAULT_FROM_EMAIL = os.environ.get(
+    "DJANGO_DEFAULT_FROM_EMAIL",
+    f"VACWEB <{EMAIL_HOST_USER}>" if EMAIL_HOST_USER else "no-reply@finca.local",
+)
+SERVER_EMAIL = DEFAULT_FROM_EMAIL  # usado por Django para mensajes administrativos
 
 # ─── Logging: mandar tracebacks de errores 500 a stderr (visible en Render) ──
 LOGGING = {

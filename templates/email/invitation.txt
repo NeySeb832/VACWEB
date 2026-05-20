@@ -1,0 +1,14 @@
+Hola {{ full_name }},
+
+Fuiste invitado a unirte al sistema VACWEB — Control Ganadero Profesional.
+
+Activa tu cuenta y define tu contraseña haciendo clic en el siguiente enlace:
+
+{{ activate_url }}
+
+IMPORTANTE: el enlace expira en {{ expiry_hours }} horas. Si no lo usas antes de ese plazo, tendrás que solicitar uno nuevo al administrador.
+
+Si no esperabas esta invitación, ignora este correo: tu información no será modificada.
+
+---
+{{ site_name }}

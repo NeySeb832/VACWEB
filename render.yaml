@@ -49,3 +49,21 @@ services:
         fromDatabase:
           name: vacweb-db
           property: connectionString
+
+      # ─── SMTP (Gmail / Google Workspace) ────────────────────────────────
+      # Estos valores se definen MANUALMENTE en el panel del servicio Render
+      # (sync: false). Ver DEPLOY.md sección "Email" para el paso a paso.
+      - key: DJANGO_EMAIL_BACKEND
+        value: "django.core.mail.backends.smtp.EmailBackend"
+      - key: EMAIL_HOST
+        value: "smtp.gmail.com"
+      - key: EMAIL_PORT
+        value: "587"
+      - key: EMAIL_USE_TLS
+        value: "True"
+      - key: EMAIL_HOST_USER
+        sync: false                # tu correo institucional/Gmail
+      - key: EMAIL_HOST_PASSWORD
+        sync: false                # App Password de 16 caracteres
+      - key: DJANGO_DEFAULT_FROM_EMAIL
+        sync: false                # ej: "VACWEB <norozcov@ucentral.edu.co>"
