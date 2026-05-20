@@ -1,0 +1,51 @@
+# Render Blueprint — declara el servicio web VACWEB con su Postgres administrado.
+# Documentación: https://render.com/docs/blueprint-spec
+#
+# Cómo usar:
+#   1. Asegurate de estar en la rama `render` y de haberla pusheado a GitHub.
+#   2. En Render: New + → Blueprint → conectar el repo → seleccionar rama `render`.
+#   3. Render creará el servicio web `vacweb` y la base Postgres `vacweb-db`
+#      en una sola operación, conectándolos vía DATABASE_URL automáticamente.
+
+databases:
+  - name: vacweb-db
+    plan: free
+    region: oregon
+    databaseName: vacweb
+    user: vacweb
+
+services:
+  - type: web
+    name: vacweb
+    runtime: python
+    plan: free
+    region: oregon
+    branch: render            # <-- desplegamos SOLO desde esta rama
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn finca_ganadera.wsgi:application --workers 3 --timeout 60 --log-file -"
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.7"
+
+      # Indica a Django/Gunicorn que use el settings_render del proyecto.
+      - key: DJANGO_SETTINGS_MODULE
+        value: finca_ganadera.settings_render
+
+      # Secreto generado por Render (no necesitás copiarlo a ningún lado).
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+
+      - key: DJANGO_DEBUG
+        value: "False"
+
+      # `.onrender.com` cubre tu subdominio automático. Si conectás dominio
+      # propio, agregalo separado por coma.
+      - key: DJANGO_ALLOWED_HOSTS
+        value: ".onrender.com"
+
+      # Conexión a la base Postgres declarada arriba. Render rellena el valor.
+      - key: DATABASE_URL
+        fromDatabase:
+          name: vacweb-db
+          property: connectionString

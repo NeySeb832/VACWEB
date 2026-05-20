@@ -1,0 +1,30 @@
+# ─── Requisitos para despliegue en Render ────────────────────────────────────
+# NOTA: en local seguís usando MySQL — este archivo es para Render con Postgres.
+# En desarrollo local instalá tus deps con: pip install Django djangorestframework
+# mysqlclient pillow reportlab (es decir, lo que ya tenías).
+
+# ─── Framework principal ──────────────────────────────────────────────────────
+Django==6.0.4
+djangorestframework==3.17.1
+
+# ─── Servidor WSGI de producción ──────────────────────────────────────────────
+gunicorn==23.0.0
+
+# ─── Archivos estáticos servidos sin nginx ───────────────────────────────────
+whitenoise==6.8.2
+
+# ─── Driver PostgreSQL (administrado por Render) ─────────────────────────────
+psycopg2-binary==2.9.10
+
+# Helper para parsear DATABASE_URL en settings_render.py
+dj-database-url==2.3.0
+
+# ─── Resto de dependencias del proyecto ──────────────────────────────────────
+pillow==12.2.0
+reportlab==4.5.1
+
+# Dependencias arrastradas (las requieren Django/DRF)
+asgiref==3.11.1
+sqlparse==0.5.5
+tzdata==2026.1
+charset-normalizer==3.4.7
