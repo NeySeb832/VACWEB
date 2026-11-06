@@ -68,19 +68,34 @@ El build toma ~3-5 minutos la primera vez. Lo que pasa en orden:
 Si todo va bien, el servicio queda **Live** y podés abrir
 `https://vacweb.onrender.com` (o el subdominio que Render asigne).
 
-### 5. Crear el primer superusuario
+### 5. Usuarios, permisos y datos demo (automático)
 
-En el panel del servicio, abrí **Shell** (icono de terminal) y ejecutá:
+El plan free de Render **no tiene Shell**, así que `build.sh` siembra todo solo:
 
-```bash
-python manage.py createsuperuser
-```
+1. `seed_rbac` en **cada** deploy → 23 permisos, 5 roles y sus asignaciones
+   (idempotente, no borra nada).
+2. **Solo si la BD no tiene usuarios** (primer deploy con BD nueva):
+   - `loaddata alertas/fixtures/reglas_alerta.json` → reglas de alertas.
+   - `seed_demo` → usuarios demo, potreros, animales, pesajes, eventos y una
+     transacción (ver `README_DEMO.md`).
+   - `seed_rbac` otra vez para completar asignaciones.
 
-O si tenés el comando de seed para datos demo:
+Usuarios que quedan creados:
 
-```bash
-python manage.py seed_demo
-```
+| Usuario | Contraseña | Rol |
+|---|---|---|
+| `admin` | `Admin123!` | Superusuario / Administrador |
+| `propietario01` | `Demo123!` | Propietario |
+| `veterinario01` | `Demo123!` | Veterinario |
+| `operario01` | `Demo123!` | Operario |
+| `auditor01` | `Demo123!` | Auditor |
+
+> ⚠️ Son contraseñas públicas de demo. Cámbialas si la app va a quedar
+> expuesta con datos reales.
+
+**Resetear la demo** (vuelve los datos al estado inicial): en Render →
+Environment agregá `VACWEB_RESEED_DEMO=true`, redesplegá y luego **quitá** la
+variable (si la dejás, cada deploy borra y recrea los datos).
 
 ---
 
