@@ -18,7 +18,7 @@ services:
   - type: web
     name: vacweb
     runtime: python
-    plan: free
+    plan: starter           # plan de pago mas economico (USD 7/mes): incluye Shell
     region: oregon
     branch: render            # <-- desplegamos SOLO desde esta rama
     buildCommand: "./build.sh"
