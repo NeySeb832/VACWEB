@@ -3,8 +3,12 @@
 CRUD básico de animales: lista, detalle, creación, edición y baja lógica.
 """
 
+import logging
+from datetime import date as _date
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db.models import Q, Count
 from django.http import JsonResponse
@@ -18,6 +22,8 @@ from .models import Animal, Potrero, Movimiento
 from .forms import AnimalForm
 from pesajes.models import Pesaje
 from potreros.models import Potrero as PotreroModel
+
+logger = logging.getLogger(__name__)
 
 
 @login_required
@@ -81,13 +87,42 @@ def animal_list(request):
 @login_required
 @require_perm("animals.write")  # 🔐 Ajusta el código si usas otro permiso de escritura
 def animal_create(request):
-    """Crear un nuevo animal."""
+    """Crear un nuevo animal.
+
+    Si se ingresa ``peso_entrada`` y el animal queda ACTIVO, se genera
+    automáticamente el primer Pesaje (entra al historial y se muestra como
+    "Peso entrada" en el detalle).
+    """
     if request.method == "POST":
         form = AnimalForm(request.POST, request.FILES)
         if form.is_valid():
             animal = form.save(commit=False)
             animal.last_modified_by = request.user
             animal.save()
+
+            if animal.peso_entrada and animal.estado == Animal.Estado.ACTIVO:
+                pesaje = Pesaje(
+                    animal=animal,
+                    fecha=animal.fecha_ingreso or _date.today(),
+                    peso_kg=animal.peso_entrada,
+                    responsable=(request.user.get_username() or "")[:64],
+                    observaciones="Pesaje inicial registrado al crear el animal.",
+                    created_by=request.user,
+                )
+                try:
+                    pesaje.full_clean()
+                    pesaje.save()
+                except (ValidationError, ValueError) as exc:
+                    logger.warning(
+                        "No se pudo crear pesaje inicial para animal %s: %s",
+                        animal.pk, exc,
+                    )
+                    messages.warning(
+                        request,
+                        "Animal creado, pero el peso de entrada no pudo registrarse "
+                        "como pesaje inicial. Puedes registrarlo manualmente.",
+                    )
+
             messages.success(request, "Animal creado correctamente.")
             return redirect("animals:detail", pk=animal.pk)
     else:

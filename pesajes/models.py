@@ -4,7 +4,6 @@ from datetime import date as _date
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.utils import timezone
 
 
 class Pesaje(models.Model):
@@ -22,7 +21,7 @@ class Pesaje(models.Model):
         on_delete=models.PROTECT,
         related_name="pesajes",
     )
-    fecha = models.DateField(default=timezone.now)
+    fecha = models.DateField(default=_date.today)
     peso_kg = models.DecimalField(max_digits=7, decimal_places=2)
     observaciones = models.TextField(blank=True, null=True)
     foto_bascula = models.ImageField(
@@ -75,8 +74,11 @@ class Pesaje(models.Model):
             else:
                 if animal.estado != Animal.Estado.ACTIVO:
                     errors["animal"] = "Solo se pueden registrar pesajes en animales con estado Activo."
-        # Fecha no futura
-        if self.fecha and self.fecha > _date.today():
+        # Fecha no futura (normalizar datetime → date para evitar TypeError si llega un datetime)
+        fecha_norm = self.fecha
+        if hasattr(fecha_norm, "date") and not isinstance(fecha_norm, _date):
+            fecha_norm = fecha_norm.date()
+        if fecha_norm and fecha_norm > _date.today():
             errors["fecha"] = "La fecha del pesaje no puede ser posterior a hoy."
         if errors:
             raise ValidationError(errors)
